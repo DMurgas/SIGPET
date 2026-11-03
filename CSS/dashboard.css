@@ -1,0 +1,400 @@
+
+.dashboard-body {
+    margin: 0;
+    min-height: 100vh;
+    background: #f3f6fa;
+    font-family: Arial, Helvetica, sans-serif;
+    color: #183452;
+}
+
+.dashboard-layout {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* BARRA LATERAL */
+
+.sidebar {
+    width: 260px;
+    min-width: 260px;
+    background: #12365d;
+    color: white;
+    padding: 28px 18px;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+}
+
+.sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 12px 38px;
+    font-size: 25px;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+.sidebar-logo {
+    width: 43px;
+    height: 43px;
+    border-radius: 12px;
+    background: white;
+    color: #164675;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 25px;
+}
+
+.sidebar-section {
+    width: 100%;
+}
+
+.sidebar-label {
+    display: block;
+    color: #9bb9d8;
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 1.5px;
+    padding: 0 12px;
+    margin-bottom: 14px;
+}
+
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 14px;
+    margin-bottom: 7px;
+    border-radius: 8px;
+    color: #dce9f7;
+    text-decoration: none;
+    font-size: 14px;
+    transition: 0.2s;
+}
+
+.sidebar-link span {
+    font-size: 20px;
+    width: 22px;
+    text-align: center;
+}
+
+.sidebar-link:hover,
+.sidebar-link.active {
+    background: #245582;
+    color: white;
+}
+
+/* INFORMACIÓN DEL USUARIO EN EL MENÚ */
+
+.sidebar-bottom {
+    margin-top: auto;
+    border-top: 1px solid #315475;
+    padding-top: 20px;
+}
+
+.sidebar-user {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 0 7px;
+    margin-bottom: 18px;
+}
+
+.user-avatar {
+    width: 39px;
+    height: 39px;
+    border-radius: 50%;
+    background: #dbeafe;
+    color: #164675;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.sidebar-user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 0;
+}
+
+.sidebar-user-info strong {
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+
+.sidebar-user-info span {
+    font-size: 11px;
+    color: #b9cee3;
+}
+
+.sidebar-logout {
+    display: block;
+    text-decoration: none;
+    color: #ffd5d5;
+    font-size: 13px;
+    padding: 11px 12px;
+    border-radius: 7px;
+}
+
+.sidebar-logout:hover {
+    background: #8d3038;
+    color: white;
+}
+
+/* CONTENIDO PRINCIPAL */
+
+.dashboard-main {
+    flex: 1;
+    min-width: 0;
+    padding: 35px 45px 20px;
+}
+
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    padding-bottom: 25px;
+    border-bottom: 1px solid #dce4ed;
+}
+
+.header-subtitle {
+    color: #2873b8;
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 1.5px;
+}
+
+.dashboard-header h1 {
+    font-size: 28px;
+    margin: 8px 0 0;
+    color: #153757;
+}
+
+/* USUARIO EN EL ENCABEZADO */
+
+.header-user {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.header-user-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 5px;
+}
+
+.header-user-text strong {
+    font-size: 13px;
+}
+
+.header-user-text span {
+    color: #71849a;
+    font-size: 12px;
+}
+
+.header-avatar {
+    width: 43px;
+    height: 43px;
+}
+
+/* SECCIÓN DE BIENVENIDA */
+
+.welcome-section {
+    margin-top: 30px;
+    padding: 32px;
+    border-radius: 13px;
+    background: linear-gradient(120deg, #164675, #24649a);
+    color: white;
+}
+
+.welcome-label {
+    color: #a9d7ff;
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 1.5px;
+}
+
+.welcome-section h2 {
+    font-size: 27px;
+    margin: 12px 0;
+}
+
+.welcome-section p {
+    max-width: 650px;
+    color: #e0ecf8;
+    line-height: 1.7;
+    font-size: 14px;
+    margin: 0;
+}
+
+/* SECCIÓN DE ACCESOS */
+
+.dashboard-section {
+    margin-top: 38px;
+}
+
+.section-heading h2 {
+    color: #183452;
+    font-size: 21px;
+    margin: 0 0 7px;
+}
+
+.section-heading p {
+    color: #7b8da1;
+    font-size: 13px;
+    margin: 0;
+}
+
+/* TARJETAS */
+
+.dashboard-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 20px;
+    margin-top: 22px;
+}
+
+.dashboard-card {
+    background: white;
+    border: 1px solid #e2e9f0;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 3px 12px rgba(20, 50, 80, 0.04);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 7px 20px rgba(20, 50, 80, 0.09);
+}
+
+.card-icon {
+    width: 47px;
+    height: 47px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 11px;
+    font-size: 25px;
+    margin-bottom: 20px;
+}
+
+.users-icon {
+    background: #e5efff;
+    color: #2765aa;
+}
+
+.inventory-icon {
+    background: #e0f4ed;
+    color: #16815e;
+}
+
+.register-icon {
+    background: #fff1db;
+    color: #b7791f;
+}
+
+.dashboard-card h3 {
+    color: #183452;
+    font-size: 17px;
+    margin: 0 0 11px;
+}
+
+.dashboard-card p {
+    color: #71849a;
+    font-size: 13px;
+    line-height: 1.7;
+    min-height: 66px;
+    margin-bottom: 20px;
+}
+
+.card-link {
+    display: inline-block;
+    color: #1d65a2;
+    font-size: 13px;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.card-link:hover {
+    color: #12365d;
+    text-decoration: underline;
+}
+
+/* PIE DE PÁGINA */
+
+.dashboard-footer {
+    margin-top: 55px;
+    padding: 20px 0;
+    border-top: 1px solid #dce4ed;
+    color: #8798aa;
+    font-size: 12px;
+    text-align: center;
+}
+
+/* DISEÑO RESPONSIVO - TABLET */
+
+@media (max-width: 850px) {
+
+    .sidebar {
+        width: 220px;
+        min-width: 220px;
+    }
+
+    .dashboard-main {
+        padding: 25px;
+    }
+
+}
+
+/* DISEÑO RESPONSIVO - MÓVIL */
+
+@media (max-width: 600px) {
+
+    .dashboard-layout {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        min-width: 0;
+        padding: 15px;
+    }
+
+    .sidebar-brand {
+        padding-bottom: 18px;
+    }
+
+    .sidebar-bottom {
+        margin-top: 15px;
+    }
+
+    .dashboard-main {
+        padding: 22px 16px;
+    }
+
+    .dashboard-header {
+        align-items: flex-start;
+    }
+
+    .header-user-text {
+        display: none;
+    }
+
+    .welcome-section {
+        padding: 24px;
+    }
+
+    .welcome-section h2 {
+        font-size: 23px;
+    }
+
+}
