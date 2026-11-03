@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 03-11-2026 a las 05:16:53
+-- Tiempo de generación: 03-11-2026 a las 05:30:26
 -- Versión del servidor: 10.11.16-MariaDB
 -- Versión de PHP: 8.3.36
 
@@ -40,6 +40,13 @@ CREATE TABLE `equipos` (
   `ubicacion` varchar(150) DEFAULT NULL,
   `fecha_registro` timestamp NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `equipos`
+--
+
+INSERT INTO `equipos` (`id_equipo`, `id_tipo`, `id_estado`, `codigo_inventario`, `nombre`, `marca`, `modelo`, `numero_serie`, `descripcion`, `ubicacion`, `fecha_registro`) VALUES
+(1, 4, 1, '123', 'Laptop', 'Sony', '1234', '1234', 'adsadas', 'awdasd', '2026-11-03 04:27:33');
 
 -- --------------------------------------------------------
 
@@ -187,7 +194,7 @@ ALTER TABLE `usuarios`
 -- AUTO_INCREMENT de la tabla `equipos`
 --
 ALTER TABLE `equipos`
-  MODIFY `id_equipo` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_equipo` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT de la tabla `estados_equipo`
