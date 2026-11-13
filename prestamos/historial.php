@@ -1,6 +1,8 @@
 <?php
+
 require_once __DIR__ . '/../includes/verificar_rol.php';
-verificarPermiso('prestamos.gestionar');
+
+verificarPermiso('prestamos.historial');
 
 require_once __DIR__ . '/../config/conexion.php';
 
@@ -22,12 +24,19 @@ $idEquipoFiltro = filter_var(
 
 $estadoFiltro = trim($_GET['estado'] ?? '');
 
-$estadosPermitidos = ['Prestado', 'Devuelto'];
+$estadosPermitidos = [
+    'Prestado',
+    'Devuelto'
+];
 
 if (!in_array($estadoFiltro, $estadosPermitidos, true)) {
     $estadoFiltro = '';
 }
 
+
+/*
+ * Obtener usuarios activos para el filtro.
+ */
 $stmtUsuarios = $conexion->prepare(
     "SELECT
         id_usuario,
@@ -40,8 +49,13 @@ $stmtUsuarios = $conexion->prepare(
 );
 
 $stmtUsuarios->execute();
+
 $usuarios = $stmtUsuarios->get_result();
 
+
+/*
+ * Obtener equipos para el filtro.
+ */
 $stmtEquipos = $conexion->prepare(
     "SELECT
         id_equipo,
@@ -52,8 +66,13 @@ $stmtEquipos = $conexion->prepare(
 );
 
 $stmtEquipos->execute();
+
 $equipos = $stmtEquipos->get_result();
 
+
+/*
+ * Consulta principal del historial.
+ */
 $sql = "
     SELECT
         p.id_prestamo,
@@ -100,65 +119,128 @@ $sql = "
 $tipos = '';
 $parametros = [];
 
+
+/*
+ * Filtro por usuario.
+ */
 if ($idUsuarioFiltro) {
+
     $sql .= " AND p.id_usuario = ?";
+
     $tipos .= 'i';
+
     $parametros[] = $idUsuarioFiltro;
 }
 
+
+/*
+ * Filtro por equipo.
+ */
 if ($idEquipoFiltro) {
+
     $sql .= " AND p.id_equipo = ?";
+
     $tipos .= 'i';
+
     $parametros[] = $idEquipoFiltro;
 }
 
+
+/*
+ * Filtro por estado del préstamo.
+ */
 if ($estadoFiltro !== '') {
+
     $sql .= " AND p.estado_prestamo = ?";
+
     $tipos .= 's';
+
     $parametros[] = $estadoFiltro;
 }
 
+
 $sql .= " ORDER BY p.id_prestamo DESC";
+
 
 $stmt = $conexion->prepare($sql);
 
 if ($tipos !== '') {
-    $stmt->bind_param($tipos, ...$parametros);
+
+    $stmt->bind_param(
+        $tipos,
+        ...$parametros
+    );
+
 }
 
 $stmt->execute();
+
 $historial = $stmt->get_result();
+
 ?>
 
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Historial de préstamos | SIGPET</title>
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-    <link rel="stylesheet" href="../CSS/base.css">
-    <link rel="stylesheet" href="../CSS/dashboard.css">
-    <link rel="stylesheet" href="../CSS/inventario.css">
-    <link rel="stylesheet" href="../CSS/prestamos.css">
+    <title>
+        Historial de préstamos | SIGPET
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="../CSS/base.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="../CSS/dashboard.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="../CSS/inventario.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="../CSS/prestamos.css"
+    >
+
 </head>
+
 
 <body class="dashboard-body">
 
 <div class="dashboard-layout">
 
+
     <?php
+
     $rutaBase = '../';
-    $paginaActiva = 'prestamos';
+
+    $paginaActiva = 'historial';
+
     require __DIR__ . '/../includes/sidebar.php';
+
     ?>
 
+
     <main class="dashboard-main">
+
 
         <header class="dashboard-header">
 
             <div>
+
                 <span class="header-subtitle">
                     GESTIÓN DE PRÉSTAMOS
                 </span>
@@ -166,7 +248,9 @@ $historial = $stmt->get_result();
                 <h1>
                     Historial de préstamos
                 </h1>
+
             </div>
+
 
             <div class="header-user">
 
@@ -179,22 +263,32 @@ $historial = $stmt->get_result();
                     </strong>
 
                     <span>
-                        <?= htmlspecialchars($rolSesion) ?>
+                        <?= htmlspecialchars(
+                            $rolSesion
+                        ) ?>
                     </span>
 
                 </div>
 
+
                 <div class="user-avatar header-avatar">
+
                     <?= htmlspecialchars(
                         strtoupper(
-                            substr($nombreSesion, 0, 1)
+                            substr(
+                                $nombreSesion,
+                                0,
+                                1
+                            )
                         )
                     ) ?>
+
                 </div>
 
             </div>
 
         </header>
+
 
 
         <section class="users-intro">
@@ -210,7 +304,9 @@ $historial = $stmt->get_result();
         </section>
 
 
+
         <section class="inventory-container">
+
 
             <div class="inventory-toolbar">
 
@@ -229,13 +325,19 @@ $historial = $stmt->get_result();
             </div>
 
 
-            <form method="GET" class="loan-filter">
+
+            <form
+                method="GET"
+                class="loan-filter"
+            >
+
 
                 <div>
 
                     <label for="id_usuario">
                         Usuario
                     </label>
+
 
                     <select
                         id="id_usuario"
@@ -246,18 +348,30 @@ $historial = $stmt->get_result();
                             Todos los usuarios
                         </option>
 
-                        <?php while ($usuario = $usuarios->fetch_assoc()): ?>
+
+                        <?php while (
+                            $usuario = $usuarios->fetch_assoc()
+                        ): ?>
 
                             <option
                                 value="<?= (int)$usuario['id_usuario'] ?>"
-                                <?= $idUsuarioFiltro === (int)$usuario['id_usuario'] ? 'selected' : '' ?>
+                                <?= $idUsuarioFiltro ===
+                                    (int)$usuario['id_usuario']
+                                    ? 'selected'
+                                    : '' ?>
                             >
+
                                 <?= htmlspecialchars(
                                     $usuario['nombres'] . ' ' .
                                     $usuario['apellidos'] .
                                     ' — ' .
-                                    ($usuario['codigo_institucional'] ?? '')
+                                    (
+                                        $usuario[
+                                            'codigo_institucional'
+                                        ] ?? ''
+                                    )
                                 ) ?>
+
                             </option>
 
                         <?php endwhile; ?>
@@ -267,11 +381,13 @@ $historial = $stmt->get_result();
                 </div>
 
 
+
                 <div>
 
                     <label for="id_equipo">
                         Equipo
                     </label>
+
 
                     <select
                         id="id_equipo"
@@ -282,17 +398,25 @@ $historial = $stmt->get_result();
                             Todos los equipos
                         </option>
 
-                        <?php while ($equipo = $equipos->fetch_assoc()): ?>
+
+                        <?php while (
+                            $equipo = $equipos->fetch_assoc()
+                        ): ?>
 
                             <option
                                 value="<?= (int)$equipo['id_equipo'] ?>"
-                                <?= $idEquipoFiltro === (int)$equipo['id_equipo'] ? 'selected' : '' ?>
+                                <?= $idEquipoFiltro ===
+                                    (int)$equipo['id_equipo']
+                                    ? 'selected'
+                                    : '' ?>
                             >
+
                                 <?= htmlspecialchars(
                                     $equipo['codigo_inventario'] .
                                     ' — ' .
                                     $equipo['nombre']
                                 ) ?>
+
                             </option>
 
                         <?php endwhile; ?>
@@ -302,11 +426,13 @@ $historial = $stmt->get_result();
                 </div>
 
 
+
                 <div>
 
                     <label for="estado">
                         Estado
                     </label>
+
 
                     <select
                         id="estado"
@@ -317,16 +443,22 @@ $historial = $stmt->get_result();
                             Todos los estados
                         </option>
 
+
                         <option
                             value="Prestado"
-                            <?= $estadoFiltro === 'Prestado' ? 'selected' : '' ?>
+                            <?= $estadoFiltro === 'Prestado'
+                                ? 'selected'
+                                : '' ?>
                         >
                             Prestado
                         </option>
 
+
                         <option
                             value="Devuelto"
-                            <?= $estadoFiltro === 'Devuelto' ? 'selected' : '' ?>
+                            <?= $estadoFiltro === 'Devuelto'
+                                ? 'selected'
+                                : '' ?>
                         >
                             Devuelto
                         </option>
@@ -334,6 +466,7 @@ $historial = $stmt->get_result();
                     </select>
 
                 </div>
+
 
 
                 <div class="action-buttons">
@@ -344,6 +477,7 @@ $historial = $stmt->get_result();
                     >
                         Consultar
                     </button>
+
 
                     <a
                         class="action-button"
@@ -357,6 +491,7 @@ $historial = $stmt->get_result();
             </form>
 
 
+
             <div class="table-responsive">
 
                 <table class="inventory-table">
@@ -364,35 +499,80 @@ $historial = $stmt->get_result();
                     <thead>
 
                         <tr>
-                            <th>ID</th>
-                            <th>Solicitante</th>
-                            <th>Equipo</th>
-                            <th>Entrega</th>
-                            <th>Devolución prevista</th>
-                            <th>Devolución real</th>
-                            <th>Estado</th>
-                            <th>Detalle</th>
+
+                            <th>
+                                ID
+                            </th>
+
+                            <th>
+                                Solicitante
+                            </th>
+
+                            <th>
+                                Equipo
+                            </th>
+
+                            <th>
+                                Entrega
+                            </th>
+
+                            <th>
+                                Devolución prevista
+                            </th>
+
+                            <th>
+                                Devolución real
+                            </th>
+
+                            <th>
+                                Estado
+                            </th>
+
+                            <th>
+                                Detalle
+                            </th>
+
                         </tr>
 
                     </thead>
 
+
                     <tbody>
 
-                    <?php if ($historial->num_rows > 0): ?>
 
-                        <?php while ($registro = $historial->fetch_assoc()): ?>
+                    <?php if (
+                        $historial->num_rows > 0
+                    ): ?>
+
+
+                        <?php while (
+                            $registro =
+                            $historial->fetch_assoc()
+                        ): ?>
+
 
                             <tr>
 
+
                                 <td>
+
                                     <strong>
-                                        #<?= (int)$registro['id_prestamo'] ?>
+                                        #<?= (int)$registro[
+                                            'id_prestamo'
+                                        ] ?>
                                     </strong>
 
                                     <small class="table-subtext">
-                                        Solicitud #<?= (int)$registro['id_solicitud'] ?>
+
+                                        Solicitud
+                                        #<?= (int)$registro[
+                                            'id_solicitud'
+                                        ] ?>
+
                                     </small>
+
                                 </td>
+
 
 
                                 <td>
@@ -402,36 +582,56 @@ $historial = $stmt->get_result();
                                         $registro['apellidos']
                                     ) ?>
 
+
                                     <small class="table-subtext">
+
                                         <?= htmlspecialchars(
-                                            $registro['codigo_institucional'] ?? ''
+                                            $registro[
+                                                'codigo_institucional'
+                                            ] ?? ''
                                         ) ?>
+
                                     </small>
 
                                 </td>
 
 
+
                                 <td>
 
                                     <?= htmlspecialchars(
-                                        $registro['codigo_inventario'] .
+                                        $registro[
+                                            'codigo_inventario'
+                                        ] .
                                         ' — ' .
-                                        $registro['nombre_equipo']
+                                        $registro[
+                                            'nombre_equipo'
+                                        ]
                                     ) ?>
+
 
                                     <small class="table-subtext">
 
                                         <?= htmlspecialchars(
                                             trim(
-                                                ($registro['marca'] ?? '') .
+                                                (
+                                                    $registro[
+                                                        'marca'
+                                                    ] ?? ''
+                                                ) .
                                                 ' ' .
-                                                ($registro['modelo'] ?? '')
+                                                (
+                                                    $registro[
+                                                        'modelo'
+                                                    ] ?? ''
+                                                )
                                             )
                                         ) ?>
 
                                     </small>
 
                                 </td>
+
 
 
                                 <td>
@@ -440,12 +640,15 @@ $historial = $stmt->get_result();
                                         date(
                                             'd/m/Y H:i',
                                             strtotime(
-                                                $registro['fecha_entrega']
+                                                $registro[
+                                                    'fecha_entrega'
+                                                ]
                                             )
                                         )
                                     ) ?>
 
                                 </td>
+
 
 
                                 <td>
@@ -454,7 +657,9 @@ $historial = $stmt->get_result();
                                         date(
                                             'd/m/Y',
                                             strtotime(
-                                                $registro['fecha_devolucion_prevista']
+                                                $registro[
+                                                    'fecha_devolucion_prevista'
+                                                ]
                                             )
                                         )
                                     ) ?>
@@ -462,15 +667,22 @@ $historial = $stmt->get_result();
                                 </td>
 
 
+
                                 <td>
 
-                                    <?php if ($registro['fecha_devolucion_real']): ?>
+                                    <?php if (
+                                        $registro[
+                                            'fecha_devolucion_real'
+                                        ]
+                                    ): ?>
 
                                         <?= htmlspecialchars(
                                             date(
                                                 'd/m/Y H:i',
                                                 strtotime(
-                                                    $registro['fecha_devolucion_real']
+                                                    $registro[
+                                                        'fecha_devolucion_real'
+                                                    ]
                                                 )
                                             )
                                         ) ?>
@@ -486,29 +698,41 @@ $historial = $stmt->get_result();
                                 </td>
 
 
+
                                 <td>
 
                                     <?php
+
                                     $claseEstado =
                                         strtolower(
-                                            $registro['estado_prestamo']
+                                            $registro[
+                                                'estado_prestamo'
+                                            ]
                                         );
+
                                     ?>
+
 
                                     <span
                                         class="loan-status status-<?= htmlspecialchars(
                                             $claseEstado
                                         ) ?>"
                                     >
+
                                         <?= htmlspecialchars(
-                                            $registro['estado_prestamo']
+                                            $registro[
+                                                'estado_prestamo'
+                                            ]
                                         ) ?>
+
                                     </span>
 
                                 </td>
 
 
+
                                 <td>
+
 
                                     <div class="table-subtext">
 
@@ -517,13 +741,22 @@ $historial = $stmt->get_result();
                                         </strong>
 
                                         <?= htmlspecialchars(
-                                            $registro['condicion_inicial']
+                                            $registro[
+                                                'condicion_inicial'
+                                            ]
                                         ) ?>
 
                                     </div>
 
 
-                                    <?php if (!empty($registro['condicion_final'])): ?>
+
+                                    <?php if (
+                                        !empty(
+                                            $registro[
+                                                'condicion_final'
+                                            ]
+                                        )
+                                    ): ?>
 
                                         <div class="table-subtext">
 
@@ -532,7 +765,9 @@ $historial = $stmt->get_result();
                                             </strong>
 
                                             <?= htmlspecialchars(
-                                                $registro['condicion_final']
+                                                $registro[
+                                                    'condicion_final'
+                                                ]
                                             ) ?>
 
                                         </div>
@@ -540,7 +775,14 @@ $historial = $stmt->get_result();
                                     <?php endif; ?>
 
 
-                                    <?php if (!empty($registro['observaciones'])): ?>
+
+                                    <?php if (
+                                        !empty(
+                                            $registro[
+                                                'observaciones'
+                                            ]
+                                        )
+                                    ): ?>
 
                                         <div class="table-subtext">
 
@@ -549,12 +791,15 @@ $historial = $stmt->get_result();
                                             </strong>
 
                                             <?= htmlspecialchars(
-                                                $registro['observaciones']
+                                                $registro[
+                                                    'observaciones'
+                                                ]
                                             ) ?>
 
                                         </div>
 
                                     <?php endif; ?>
+
 
 
                                     <div class="table-subtext">
@@ -564,7 +809,9 @@ $historial = $stmt->get_result();
                                         </strong>
 
                                         <?= htmlspecialchars(
-                                            $registro['proposito']
+                                            $registro[
+                                                'proposito'
+                                            ]
                                         ) ?>
 
                                     </div>
@@ -573,9 +820,12 @@ $historial = $stmt->get_result();
 
                             </tr>
 
+
                         <?php endwhile; ?>
 
+
                     <?php else: ?>
+
 
                         <tr>
 
@@ -583,12 +833,15 @@ $historial = $stmt->get_result();
                                 colspan="8"
                                 class="empty-table"
                             >
-                                No hay préstamos que coincidan con los filtros seleccionados.
+                                No hay préstamos que coincidan
+                                con los filtros seleccionados.
                             </td>
 
                         </tr>
 
+
                     <?php endif; ?>
+
 
                     </tbody>
 
@@ -599,21 +852,33 @@ $historial = $stmt->get_result();
         </section>
 
 
+
         <footer class="dashboard-footer">
+
             SIGPET © 2026 |
-            Sistema de Gestión de Préstamos de Equipos Tecnológicos
+            Sistema de Gestión de Préstamos
+            de Equipos Tecnológicos
+
         </footer>
+
 
     </main>
 
 </div>
 
 </body>
+
 </html>
 
+
 <?php
+
 $stmt->close();
+
 $stmtUsuarios->close();
+
 $stmtEquipos->close();
+
 $conexion->close();
+
 ?>

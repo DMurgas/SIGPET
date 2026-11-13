@@ -20,14 +20,6 @@ if (!$idPrestamo) {
     exit();
 }
 
-/*
- * Consultar el préstamo y verificar:
- * 1. Que exista.
- * 2. Que esté actualmente prestado.
- * 3. Que el equipo corresponda al préstamo.
- * 4. Que podamos mostrar toda la información necesaria
- *    para registrar la devolución.
- */
 $stmt = $conexion->prepare(
     "SELECT
         p.id_prestamo,
@@ -85,18 +77,11 @@ if (!$prestamo) {
     exit();
 }
 
-/*
- * Solo se puede registrar la devolución de un préstamo
- * que actualmente esté en estado Prestado.
- */
 if ($prestamo['estado_prestamo'] !== 'Prestado') {
     header('Location: listar.php?estado=Aprobada&error=estado_prestamo');
     exit();
 }
 
-/*
- * El equipo también debe encontrarse en estado Prestado.
- */
 if ($prestamo['nombre_estado'] !== 'Prestado') {
     header('Location: listar.php?estado=Aprobada&error=estado_equipo');
     exit();
@@ -353,6 +338,40 @@ $tokenCSRF = obtenerTokenCSRF();
                         name="id_prestamo"
                         value="<?= (int)$prestamo['id_prestamo'] ?>"
                     >
+
+
+                    <div class="form-group">
+
+                        <label for="estado_devolucion">
+                            Resultado de la devolución *
+                        </label>
+
+                        <select
+                            id="estado_devolucion"
+                            name="estado_devolucion"
+                            required
+                        >
+                            <option value="">
+                                Selecciona una opción
+                            </option>
+
+                            <option value="normal">
+                                Equipo devuelto en buen estado
+                            </option>
+
+                            <option value="danado">
+                                Equipo devuelto con daños
+                                — enviar a mantenimiento
+                            </option>
+
+                        </select>
+
+                        <small>
+                            Esta selección determina el estado final
+                            del equipo en el inventario.
+                        </small>
+
+                    </div>
 
 
                     <div class="form-group">

@@ -1,31 +1,55 @@
-# SIGPET — Incremento 1 (RF-01 a RF-07)
+# SIGPET — Incrementos 1 y 2
 
-Aplicación web académica para la gestión de usuarios e inventario de equipos tecnológicos.
+Sistema web académico para la gestión de usuarios, inventario y préstamos de equipos tecnológicos.
+
+La versión actual integra las funcionalidades correspondientes al **Incremento 1** y al **Incremento 2**, incluyendo la gestión de usuarios, inventario, solicitudes de préstamo, aprobación y rechazo, entrega, devolución, actualización de estados, mantenimiento e historial de préstamos.
 
 ## Tecnologías
 
 - PHP 8.1 o superior
-- MySQL / MariaDB (XAMPP)
+- MySQL / MariaDB
+- XAMPP
 - HTML y CSS
-- JavaScript nativo únicamente para confirmaciones del navegador
+- JavaScript nativo para confirmaciones del navegador
 
 ## Instalación local con XAMPP
 
-1. Copiar la carpeta `INR_SIGPET` dentro de `C:\xampp\htdocs\`.
-2. Iniciar Apache y MySQL desde el panel de XAMPP.
-3. Abrir phpMyAdmin en `http://localhost/phpmyadmin/`.
-4. Crear una base de datos llamada `sigpet` con cotejamiento `utf8mb4_general_ci`, o seleccionar la base existente.
-5. Importar `database/sigpet.sql`.
-6. Revisar `config/conexion.php`. La configuración incluida corresponde al XAMPP local típico: servidor `localhost`, usuario `root`, contraseña vacía y base `sigpet`.
-7. Abrir `http://localhost/INR_SIGPET/login.php`.
+1. Copiar la carpeta del proyecto dentro de:
 
-> Si ya tienes una base `sigpet` con datos que deseas conservar, realiza una copia de seguridad antes de importar el SQL, ya que el script crea las tablas e inserta los catálogos iniciales.
+   `C:\xampp\htdocs\`
+
+2. Iniciar **Apache** y **MySQL** desde el panel de XAMPP.
+
+3. Abrir phpMyAdmin:
+
+   `http://localhost/phpmyadmin/`
+
+4. Importar el archivo:
+
+   `database/sigpet.sql`
+
+   El script crea la base de datos `sigpet`, selecciona dicha base y crea las tablas necesarias para los Incrementos 1 y 2.
+
+5. Revisar:
+
+   `config/conexion.php`
+
+   La configuración incluida corresponde al entorno XAMPP local utilizado durante el desarrollo:
+
+   - Servidor: `localhost`
+   - Usuario: `root`
+   - Contraseña: vacía
+   - Base de datos: `sigpet`
+
+6. Abrir el sistema desde:
+
+   `http://localhost/INR_SIGPET/login.php`
+
+> Si ya existe una base de datos `sigpet` con información que se desea conservar, realizar una copia de seguridad antes de importar el script SQL.
 
 ## Usuarios y roles
 
-El SQL de entrega contiene registros semilla de usuarios con contraseñas almacenadas mediante hash. El archivo SQL no contiene las contraseñas en texto plano; utiliza las credenciales que el equipo ya definió para esas cuentas. Para crear otras cuentas, ingresa como Administrador y utiliza **Gestión de usuarios → Nuevo usuario**.
-
-Roles incluidos en la tabla `roles`:
+El sistema maneja los siguientes roles:
 
 - Estudiante
 - Docente
@@ -33,111 +57,166 @@ Roles incluidos en la tabla `roles`:
 - Administrador
 - Coordinador académico
 
-## Funcionalidades entregadas
+El archivo SQL contiene registros semilla de usuarios con contraseñas almacenadas mediante hash. Las contraseñas no se almacenan en texto plano.
+
+La administración de usuarios puede realizarse desde:
+
+**Gestión de usuarios → Nuevo usuario**
+
+cuando la cuenta tenga los permisos correspondientes.
+
+## Incremento 1 — RF-01 a RF-07
 
 ### RF-01 — Autenticación
 
 - Inicio de sesión mediante correo institucional y contraseña.
-- Verificación con `password_verify()`.
+- Verificación de contraseña mediante `password_verify()`.
 - Rechazo de cuentas inactivas.
-- Regeneración del identificador de sesión tras autenticación.
+- Regeneración del identificador de sesión después de la autenticación.
 - Cierre de sesión.
 
 ### RF-02 — Roles
 
-- Catálogo de cinco roles precargados en la tabla `roles`.
-- Asignación de rol al registrar o editar una cuenta (Administrador).
+- Catálogo de cinco roles.
+- Asignación de roles desde la administración de usuarios.
 - Matriz de permisos en `includes/permisos.php`.
-- Protección de páginas y acciones del lado del servidor.
+- Protección de páginas y acciones mediante validación del lado del servidor.
 
 ### RF-03 — Usuarios
 
-- Consulta y búsqueda por nombres, apellidos, correo, código y rol.
-- Registro de usuarios y hash seguro de contraseñas.
-- Edición de datos y rol (Administrador).
-- Desactivación y reactivación lógica mediante `usuarios.activo`.
-- Protección para impedir que el administrador desactive su propia cuenta o deje el sistema sin administrador activo.
+- Consulta y búsqueda de usuarios.
+- Registro de nuevos usuarios.
+- Almacenamiento seguro de contraseñas mediante hash.
+- Edición de datos y roles.
+- Desactivación y reactivación lógica.
+- Protección de la cuenta del administrador.
 
 ### RF-04 — Equipos
 
-- Registro, consulta y edición de equipos.
-- Baja lógica mediante el estado `Dado de baja`; no se elimina físicamente el registro.
-- Reactivación de un equipo dado de baja (lo devuelve a estado `Disponible`).
-- Validación de código de inventario y número de serie duplicados.
+- Registro de equipos.
+- Consulta y edición.
+- Validación de código de inventario y número de serie.
+- Baja lógica mediante el estado `Dado de baja`.
+- Reactivación de equipos dados de baja.
 
 ### RF-05 — Tipos de equipo
 
-- Clasificación mediante el catálogo `tipos_equipo`.
-- Tipos iniciales: Laptop, Proyector, Cámara y Kit electrónico.
-- Selección de tipo al registrar y editar un equipo.
+- Gestión mediante el catálogo `tipos_equipo`.
+- Tipos iniciales:
+  - Laptop
+  - Proyector
+  - Cámara
+  - Kit electrónico
 
 ### RF-06 — Estado del equipo
 
-- Visualización del estado actual en el inventario.
-- Estados iniciales: Disponible, Reservado, Prestado, En mantenimiento y Dado de baja.
-- Edición del estado desde el formulario de modificación del equipo.
+El sistema maneja los siguientes estados:
+
+- Disponible
+- Reservado
+- Prestado
+- En mantenimiento
+- Dado de baja
 
 ### RF-07 — Búsqueda y filtros
 
-- Búsqueda por código de inventario, nombre, marca, modelo, número de serie y ubicación.
-- Filtro por tipo.
-- Filtro por estado.
-- Filtro rápido para mostrar solamente los equipos Disponibles.
+- Búsqueda por código de inventario.
+- Búsqueda por nombre, marca y modelo.
+- Búsqueda por número de serie y ubicación.
+- Filtros por tipo y estado.
+- Filtro de equipos disponibles.
 
-## Permisos configurados
+## Incremento 2 — Préstamos y devoluciones
 
-| Rol | Usuarios | Inventario |
-|---|---|---|
-| Administrador | Consultar, registrar, editar, desactivar y asignar roles | Consultar, registrar, editar y dar de baja |
-| Encargado de préstamos | Sin gestión de usuarios | Consultar, registrar, editar y dar de baja |
-| Estudiante | Sin gestión de usuarios | Consultar estado y disponibilidad |
-| Docente | Sin gestión de usuarios | Consultar estado y disponibilidad |
-| Coordinador académico | Sin gestión de usuarios | Consultar estado y disponibilidad |
+El Incremento 2 implementa el ciclo de vida de los préstamos de equipos tecnológicos.
 
-## Estructura principal
+### Solicitudes de préstamo
+
+- Registro de solicitudes de préstamo.
+- Estado inicial `Pendiente`.
+- Registro de usuario solicitante.
+- Registro de equipo solicitado.
+- Registro de fecha de inicio.
+- Registro de fecha prevista de devolución.
+- Registro del propósito de la solicitud.
+
+### Aprobación y rechazo
+
+El encargado de préstamos puede:
+
+- Aprobar solicitudes pendientes.
+- Rechazar solicitudes.
+- Registrar el motivo del rechazo.
+- Registrar quién tomó la decisión.
+- Registrar la fecha de decisión.
+
+Cuando una solicitud es aprobada, el equipo pasa al estado `Reservado`.
+
+### Entrega del equipo
+
+El sistema permite registrar:
+
+- Fecha de entrega.
+- Responsable de la entrega.
+- Persona que autorizó el préstamo.
+- Condición física inicial.
+
+Al registrar la entrega, el equipo pasa de `Reservado` a `Prestado`.
+
+### Devolución del equipo
+
+El sistema permite registrar:
+
+- Fecha real de devolución.
+- Condición final del equipo.
+- Observaciones.
+- Resultado de la devolución.
+
+Cuando la devolución es normal:
+
+`Prestado → Disponible`
+
+Cuando el equipo presenta daños:
+
+`Prestado → En mantenimiento`
+
+El préstamo queda registrado como `Devuelto`.
+
+### Historial de préstamos
+
+El sistema integra un módulo de historial que permite consultar los préstamos y sus estados, incluyendo información relacionada con:
+
+- Solicitante.
+- Equipo.
+- Fechas.
+- Estado del préstamo.
+- Entrega.
+- Devolución.
+- Condiciones y observaciones.
+
+El historial se encuentra integrado al sistema mediante el menú principal y el control de permisos.
+
+### Control de equipos en mantenimiento
+
+Los equipos con estado `En mantenimiento` no se muestran como disponibles para nuevas solicitudes.
+
+Esto evita que un equipo que requiere mantenimiento pueda ser solicitado nuevamente.
+
+## Flujo general del préstamo
 
 ```text
-INR_SIGPET/
-├── config/conexion.php
-├── CSS/
-├── database/sigpet.sql
-├── includes/
-│   ├── csrf.php
-│   ├── permisos.php
-│   ├── sidebar.php
-│   ├── verificar_rol.php
-│   └── verificar_sesion.php
-├── inventario/
-│   ├── listar.php
-│   ├── registrar.php
-│   ├── editar.php
-│   └── cambiar_estado.php
-├── usuarios/
-│   ├── listar.php
-│   ├── registrar.php
-│   ├── editar.php
-│   └── cambiar_estado.php
-├── dashboard.php
-├── login.php
-├── logout.php
-└── validar_login.php
-```
-
-## Pruebas funcionales recomendadas
-
-1. Iniciar sesión con una cuenta activa y comprobar el acceso al panel.
-2. Intentar acceder con contraseña incorrecta y con una cuenta inactiva.
-3. Verificar que el Administrador pueda registrar, editar, buscar, desactivar y reactivar usuarios.
-4. Confirmar que un usuario Estudiante o Docente no pueda abrir las páginas de administración de usuarios por URL.
-5. Registrar un equipo de cada tipo y comprobar que inicie como Disponible.
-6. Editar características, tipo y estado de un equipo.
-7. Dar de baja un equipo y comprobar que permanezca en la base de datos con estado `Dado de baja`.
-8. Buscar por código, nombre o marca, filtrar por tipo y estado, y activar `Solo disponibles`.
-9. Iniciar sesión con Estudiante y Docente y verificar que puedan consultar el inventario, pero no modificarlo.
-10. Iniciar sesión con Encargado de préstamos y verificar que pueda administrar inventario, pero no usuarios.
-
-## Alcance de esta versión
-
-Esta entrega implementa las funcionalidades correspondientes al **Incremento 1: RF-01 a RF-07**. No incluye solicitudes/reservas, aprobación, préstamos, entregas, devoluciones, historial, alertas, reportes ni bitácora; esas funciones pertenecen a incrementos posteriores según el documento del proyecto.
-
-La ejecución de PHP se revisó mediante comprobación sintáctica. Las pruebas de integración con MySQL deben ejecutarse en el XAMPP del equipo, porque esta entrega no contiene una instancia de su base de datos ejecutándose.
+Solicitud
+   ↓
+Pendiente
+   ↓
+Aprobación
+   ↓
+Reservado
+   ↓
+Entrega
+   ↓
+Prestado
+   ↓
+Devolución
+   ├── Buen estado → Disponible
+   └── Con daños   → En mantenimiento

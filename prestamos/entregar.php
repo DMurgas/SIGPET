@@ -7,7 +7,7 @@ require_once __DIR__ . '/../config/conexion.php';
 
 $nombreSesion = $_SESSION['nombres'] ?? '';
 $apellidoSesion = $_SESSION['apellidos'] ?? '';
-$rolSesion = $_SESSION['rol'] ?? '';
+$idUsuarioSesion = (int)($_SESSION['id_usuario'] ?? 0);
 
 $idSolicitud = filter_var(
     $_GET['id'] ?? '',
@@ -20,6 +20,13 @@ if (!$idSolicitud) {
     exit();
 }
 
+/*
+ * Consultar la solicitud aprobada y comprobar:
+ * 1. Que exista.
+ * 2. Que esté aprobada.
+ * 3. Que el equipo esté reservado.
+ * 4. Que todavía no tenga un préstamo registrado.
+ */
 $stmt = $conexion->prepare(
     "SELECT
         s.id_solicitud,
@@ -34,6 +41,10 @@ $stmt = $conexion->prepare(
         u.apellidos,
         u.codigo_institucional,
 
+        a.nombres AS autorizado_nombres,
+        a.apellidos AS autorizado_apellidos,
+        a.codigo_institucional AS autorizado_codigo,
+
         e.codigo_inventario,
         e.nombre AS nombre_equipo,
         e.marca,
@@ -43,12 +54,19 @@ $stmt = $conexion->prepare(
         es.nombre_estado
 
      FROM solicitudes_prestamo s
+
      INNER JOIN usuarios u
         ON u.id_usuario = s.id_usuario
+
+     INNER JOIN usuarios a
+        ON a.id_usuario = s.decidido_por
+
      INNER JOIN equipos e
         ON e.id_equipo = s.id_equipo
+
      INNER JOIN estados_equipo es
         ON es.id_estado = e.id_estado
+
      WHERE s.id_solicitud = ?
      LIMIT 1"
 );
@@ -75,6 +93,9 @@ if ($solicitud['nombre_estado'] !== 'Reservado') {
     exit();
 }
 
+/*
+ * Verificar que no exista ya un préstamo para esta solicitud.
+ */
 $stmt = $conexion->prepare(
     "SELECT id_prestamo
      FROM prestamos
@@ -140,6 +161,7 @@ $tokenCSRF = obtenerTokenCSRF();
     <?php
     $rutaBase = '../';
     $paginaActiva = 'prestamos';
+
     require __DIR__ . '/../includes/sidebar.php';
     ?>
 
@@ -165,36 +187,29 @@ $tokenCSRF = obtenerTokenCSRF();
 
                     <strong>
                         <?= htmlspecialchars(
-                            $nombreSesion . ' ' . $apellidoSesion,
-                            ENT_QUOTES,
-                            'UTF-8'
+                            $nombreSesion . ' ' . $apellidoSesion
                         ) ?>
                     </strong>
 
                     <span>
                         <?= htmlspecialchars(
-                            $rolSesion,
-                            ENT_QUOTES,
-                            'UTF-8'
+                            $_SESSION['rol'] ?? ''
                         ) ?>
                     </span>
 
                 </div>
 
                 <div class="user-avatar header-avatar">
-
                     <?= htmlspecialchars(
-                        strtoupper(substr($nombreSesion, 0, 1)),
-                        ENT_QUOTES,
-                        'UTF-8'
+                        strtoupper(
+                            substr($nombreSesion, 0, 1)
+                        )
                     ) ?>
-
                 </div>
 
             </div>
 
         </header>
-
 
         <section class="users-intro">
 
@@ -208,7 +223,6 @@ $tokenCSRF = obtenerTokenCSRF();
             </p>
 
         </section>
-
 
         <section class="inventory-container">
 
@@ -228,7 +242,6 @@ $tokenCSRF = obtenerTokenCSRF();
 
             </div>
 
-
             <div class="loan-form-container">
 
                 <div class="loan-summary">
@@ -238,46 +251,33 @@ $tokenCSRF = obtenerTokenCSRF();
                         #<?= (int)$solicitud['id_solicitud'] ?>
                     </p>
 
-
                     <p>
                         <strong>Solicitante:</strong>
-
                         <?= htmlspecialchars(
                             $solicitud['nombres'] . ' ' .
-                            $solicitud['apellidos'],
-                            ENT_QUOTES,
-                            'UTF-8'
+                            $solicitud['apellidos']
                         ) ?>
 
                         <?php if (!empty($solicitud['codigo_institucional'])): ?>
 
                             <small class="table-subtext">
-
                                 <?= htmlspecialchars(
-                                    $solicitud['codigo_institucional'],
-                                    ENT_QUOTES,
-                                    'UTF-8'
+                                    $solicitud['codigo_institucional']
                                 ) ?>
-
                             </small>
 
                         <?php endif; ?>
 
                     </p>
 
-
                     <p>
                         <strong>Equipo:</strong>
-
                         <?= htmlspecialchars(
                             $solicitud['codigo_inventario'] .
                             ' — ' .
-                            $solicitud['nombre_equipo'],
-                            ENT_QUOTES,
-                            'UTF-8'
+                            $solicitud['nombre_equipo']
                         ) ?>
                     </p>
-
 
                     <p>
                         <strong>Marca / modelo:</strong>
@@ -287,42 +287,31 @@ $tokenCSRF = obtenerTokenCSRF();
                                 ($solicitud['marca'] ?? '') .
                                 ' ' .
                                 ($solicitud['modelo'] ?? '')
-                            ),
-                            ENT_QUOTES,
-                            'UTF-8'
+                            )
                         ) ?>
                     </p>
-
 
                     <p>
                         <strong>Período:</strong>
 
                         <?= htmlspecialchars(
-                            $solicitud['fecha_inicio'],
-                            ENT_QUOTES,
-                            'UTF-8'
+                            $solicitud['fecha_inicio']
                         ) ?>
 
                         hasta
 
                         <?= htmlspecialchars(
-                            $solicitud['fecha_devolucion_prevista'],
-                            ENT_QUOTES,
-                            'UTF-8'
+                            $solicitud['fecha_devolucion_prevista']
                         ) ?>
                     </p>
-
 
                     <p>
                         <strong>Propósito:</strong>
 
                         <?= htmlspecialchars(
-                            $solicitud['proposito'],
-                            ENT_QUOTES,
-                            'UTF-8'
+                            $solicitud['proposito']
                         ) ?>
                     </p>
-
 
                     <p>
                         <strong>Estado del equipo:</strong>
@@ -330,11 +319,9 @@ $tokenCSRF = obtenerTokenCSRF();
                         <span class="loan-status status-reservado">
                             Reservado
                         </span>
-
                     </p>
 
                 </div>
-
 
                 <form
                     method="POST"
@@ -345,11 +332,7 @@ $tokenCSRF = obtenerTokenCSRF();
                     <input
                         type="hidden"
                         name="token_csrf"
-                        value="<?= htmlspecialchars(
-                            $tokenCSRF,
-                            ENT_QUOTES,
-                            'UTF-8'
-                        ) ?>"
+                        value="<?= htmlspecialchars($tokenCSRF) ?>"
                     >
 
                     <input
@@ -357,7 +340,6 @@ $tokenCSRF = obtenerTokenCSRF();
                         name="id_solicitud"
                         value="<?= (int)$solicitud['id_solicitud'] ?>"
                     >
-
 
                     <div class="form-group">
 
@@ -381,20 +363,17 @@ $tokenCSRF = obtenerTokenCSRF();
 
                     </div>
 
-
                     <div class="form-group">
 
-                        <label for="responsable_entrega">
+                        <label>
                             Responsable de la entrega
                         </label>
 
                         <input
-                            id="responsable_entrega"
                             type="text"
                             value="<?= htmlspecialchars(
-                                $nombreSesion . ' ' . $apellidoSesion,
-                                ENT_QUOTES,
-                                'UTF-8'
+                                $nombreSesion . ' ' .
+                                $apellidoSesion
                             ) ?>"
                             readonly
                         >
@@ -405,31 +384,26 @@ $tokenCSRF = obtenerTokenCSRF();
 
                     </div>
 
-
                     <div class="form-group">
 
-                        <label for="autorizado_por">
+                        <label>
                             Autorizado por
                         </label>
 
                         <input
-                            id="autorizado_por"
                             type="text"
                             value="<?= htmlspecialchars(
-                                $nombreSesion . ' ' . $apellidoSesion,
-                                ENT_QUOTES,
-                                'UTF-8'
+                                $solicitud['autorizado_nombres'] . ' ' .
+                                $solicitud['autorizado_apellidos']
                             ) ?>"
                             readonly
                         >
 
                         <small>
-                            Usuario responsable que autoriza
-                            la entrega en el sistema.
+                            Responsable registrado al momento de aprobar la solicitud.
                         </small>
 
                     </div>
-
 
                     <div class="action-buttons">
 
@@ -455,7 +429,6 @@ $tokenCSRF = obtenerTokenCSRF();
             </div>
 
         </section>
-
 
         <footer class="dashboard-footer">
 

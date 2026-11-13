@@ -6,58 +6,71 @@ verificarPermiso('prestamos.gestionar');
 require_once __DIR__ . '/../includes/csrf.php';
 require_once __DIR__ . '/../config/conexion.php';
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: listar.php?estado=Aprobada');
-    exit();
-}
-
 /*
- * Validar token CSRF.
+ * La operación solo puede ejecutarse mediante POST
+ * y con un token CSRF válido.
  */
-if (!validarTokenCSRF()) {
-    header('Location: listar.php?estado=Aprobada&error=csrf');
-    exit();
+if (
+    $_SERVER['REQUEST_METHOD'] !== 'POST' ||
+    !validarTokenCSRF()
+) {
+    http_response_code(400);
+    exit('Solicitud no válida.');
 }
 
+
 /*
- * Obtener datos enviados.
+ * Datos recibidos.
  */
 $idSolicitud = filter_var(
     $_POST['id_solicitud'] ?? '',
     FILTER_VALIDATE_INT,
-    ['options' => ['min_range' => 1]]
+    [
+        'options' => [
+            'min_range' => 1
+        ]
+    ]
 );
 
-$condicionInicial = trim($_POST['condicion_inicial'] ?? '');
+$condicionInicial = trim(
+    $_POST['condicion_inicial'] ?? ''
+);
 
-if (!$idSolicitud) {
-    header('Location: listar.php?estado=Aprobada&error=solicitud');
-    exit();
-}
-
-if ($condicionInicial === '') {
-    header('Location: entregar.php?id=' . $idSolicitud . '&error=condicion');
-    exit();
-}
-
-if (mb_strlen($condicionInicial) > 500) {
-    header('Location: entregar.php?id=' . $idSolicitud . '&error=condicion');
-    exit();
-}
 
 /*
- * Usuario que registra la entrega.
+ * Usuario que está registrando físicamente
+ * la entrega.
  *
- * En este flujo el usuario autenticado es:
- * - quien registra la entrega.
- * - quien queda registrado como autorizado por.
+ * RF-11:
+ * entregado_por = usuario actual.
  */
-$idUsuarioSesion = (int)($_SESSION['id_usuario'] ?? 0);
+$idUsuarioEntrega = (int)(
+    $_SESSION['id_usuario'] ?? 0
+);
 
-if ($idUsuarioSesion <= 0) {
-    header('Location: ../login.php');
+
+/*
+ * Validaciones básicas.
+ */
+if (
+    !$idSolicitud ||
+    $idUsuarioEntrega <= 0 ||
+    $condicionInicial === ''
+) {
+    header(
+        'Location: listar.php?estado=Aprobada&error=campos_entrega'
+    );
     exit();
 }
+
+
+if (mb_strlen($condicionInicial) > 500) {
+    header(
+        'Location: listar.php?estado=Aprobada&error=condicion_entrega'
+    );
+    exit();
+}
+
 
 try {
 
@@ -66,18 +79,22 @@ try {
      */
     $conexion->begin_transaction();
 
+
     /*
-     * 1. Obtener la solicitud y bloquearla para evitar
-     *    registros duplicados simultáneos.
+     * Obtener la solicitud aprobada.
+     *
+     * decidido_por = usuario que aprobó la solicitud.
+     *
+     * RF-11:
+     * autorizado_por = decidido_por
      */
     $stmt = $conexion->prepare(
         "SELECT
             s.id_solicitud,
             s.id_usuario,
             s.id_equipo,
-            s.fecha_inicio,
-            s.fecha_devolucion_prevista,
             s.estado_solicitud,
+            s.decidido_por,
 
             e.id_estado,
             es.nombre_estado
@@ -95,220 +112,317 @@ try {
          FOR UPDATE"
     );
 
-    $stmt->bind_param('i', $idSolicitud);
+    $stmt->bind_param(
+        'i',
+        $idSolicitud
+    );
+
     $stmt->execute();
 
-    $solicitud = $stmt->get_result()->fetch_assoc();
+    $solicitud =
+        $stmt->get_result()->fetch_assoc();
 
     $stmt->close();
 
+
     /*
-     * La solicitud debe existir.
+     * Verificar que exista.
      */
     if (!$solicitud) {
-        throw new RuntimeException('solicitud');
+        throw new RuntimeException(
+            'solicitud'
+        );
     }
+
 
     /*
      * La solicitud debe estar aprobada.
      */
-    if ($solicitud['estado_solicitud'] !== 'Aprobada') {
-        throw new RuntimeException('estado');
+    if (
+        $solicitud['estado_solicitud']
+        !== 'Aprobada'
+    ) {
+        throw new RuntimeException(
+            'estado'
+        );
     }
 
+
     /*
-     * El equipo debe estar reservado.
+     * Debe existir quién autorizó.
      */
-    if ($solicitud['nombre_estado'] !== 'Reservado') {
-        throw new RuntimeException('equipo');
+    if (
+        empty($solicitud['decidido_por'])
+    ) {
+        throw new RuntimeException(
+            'autorizador'
+        );
     }
 
+
     /*
-     * 2. Verificar que la solicitud todavía no tenga
-     *    un préstamo registrado.
+     * El equipo debe estar reservado
+     * antes de realizar la entrega.
+     */
+    if (
+        $solicitud['nombre_estado']
+        !== 'Reservado'
+    ) {
+        throw new RuntimeException(
+            'equipo'
+        );
+    }
+
+
+    /*
+     * Verificar que todavía no exista
+     * un préstamo para la solicitud.
      */
     $stmt = $conexion->prepare(
-        "SELECT id_prestamo
+        "SELECT
+            id_prestamo
+
          FROM prestamos
+
          WHERE id_solicitud = ?
+
          LIMIT 1
+
          FOR UPDATE"
     );
 
-    $stmt->bind_param('i', $idSolicitud);
+    $stmt->bind_param(
+        'i',
+        $idSolicitud
+    );
+
     $stmt->execute();
 
-    $prestamoExistente = $stmt->get_result()->fetch_assoc();
+    $prestamoExistente =
+        $stmt->get_result()->fetch_assoc();
 
     $stmt->close();
 
+
     if ($prestamoExistente) {
-        throw new RuntimeException('ya_entregado');
+        throw new RuntimeException(
+            'ya_entregado'
+        );
     }
 
+
     /*
-     * 3. Obtener el estado "Prestado".
+     * Identificadores.
+     */
+    $idEquipo = (int)(
+        $solicitud['id_equipo']
+    );
+
+    $idSolicitante = (int)(
+        $solicitud['id_usuario']
+    );
+
+
+    /*
+     * RF-11
+     *
+     * autorizado_por = quien aprobó
+     * entregado_por  = quien registra la entrega
+     */
+    $idAutorizador = (int)(
+        $solicitud['decidido_por']
+    );
+
+
+    /*
+     * Obtener el estado "Prestado".
      */
     $stmt = $conexion->prepare(
-        "SELECT id_estado
+        "SELECT
+            id_estado
+
          FROM estados_equipo
+
          WHERE nombre_estado = 'Prestado'
+
          LIMIT 1"
     );
 
     $stmt->execute();
 
-    $estadoPrestado = $stmt->get_result()->fetch_assoc();
+    $estadoPrestado =
+        $stmt->get_result()->fetch_assoc();
 
     $stmt->close();
 
+
     if (!$estadoPrestado) {
-        throw new RuntimeException('estado_prestado');
+        throw new RuntimeException(
+            'estado_prestado'
+        );
     }
 
-    $idEstadoPrestado = (int)$estadoPrestado['id_estado'];
+
+    $idEstadoPrestado = (int)(
+        $estadoPrestado['id_estado']
+    );
+
 
     /*
-     * 4. Registrar el préstamo.
-     *
-     * id_usuario:
-     *    estudiante/docente que solicitó el equipo.
+     * Registrar el préstamo.
      *
      * entregado_por:
-     *    usuario que registra físicamente la entrega.
+     * usuario que realiza la entrega.
      *
      * autorizado_por:
-     *    usuario que autoriza la entrega.
-     *
-     * condicion_inicial:
-     *    condición física registrada al entregar.
-     *
-     * estado_prestamo:
-     *    Prestado.
+     * usuario que aprobó la solicitud.
      */
     $stmt = $conexion->prepare(
-        "INSERT INTO prestamos (
-            id_solicitud,
-            id_equipo,
-            id_usuario,
-            fecha_entrega,
-            entregado_por,
-            autorizado_por,
-            condicion_inicial,
-            estado_prestamo
-        )
-        VALUES (?, ?, ?, NOW(), ?, ?, ?, 'Prestado')"
+        "INSERT INTO prestamos
+            (
+                id_solicitud,
+                id_equipo,
+                id_usuario,
+                fecha_entrega,
+                entregado_por,
+                autorizado_por,
+                condicion_inicial,
+                estado_prestamo
+            )
+
+         VALUES
+            (
+                ?,
+                ?,
+                ?,
+                NOW(),
+                ?,
+                ?,
+                ?,
+                'Prestado'
+            )"
     );
 
     $stmt->bind_param(
         'iiiiis',
         $idSolicitud,
-        $solicitud['id_equipo'],
-        $solicitud['id_usuario'],
-        $idUsuarioSesion,
-        $idUsuarioSesion,
+        $idEquipo,
+        $idSolicitante,
+        $idUsuarioEntrega,
+        $idAutorizador,
         $condicionInicial
     );
 
     $stmt->execute();
 
-    if ($stmt->affected_rows !== 1) {
-        throw new RuntimeException('registro_prestamo');
-    }
-
     $stmt->close();
 
+
     /*
-     * 5. Cambiar el estado del equipo:
+     * Actualizar el estado del equipo:
      *
-     * Reservado -> Prestado
-     *
-     * La condición WHERE evita modificarlo si,
-     * por alguna razón, dejó de estar reservado.
+     * Reservado → Prestado
      */
     $stmt = $conexion->prepare(
         "UPDATE equipos
+
          SET id_estado = ?
+
          WHERE id_equipo = ?
-           AND id_estado = (
-               SELECT id_estado
-               FROM estados_equipo
-               WHERE nombre_estado = 'Reservado'
-           )"
+
+         AND id_estado = (
+             SELECT
+                 id_estado
+
+             FROM estados_equipo
+
+             WHERE nombre_estado = 'Reservado'
+
+             LIMIT 1
+         )"
     );
 
     $stmt->bind_param(
         'ii',
         $idEstadoPrestado,
-        $solicitud['id_equipo']
+        $idEquipo
     );
 
     $stmt->execute();
 
-    if ($stmt->affected_rows !== 1) {
-        throw new RuntimeException('equipo_actualizacion');
+
+    /*
+     * Debe haberse actualizado exactamente
+     * un equipo.
+     */
+    if (
+        $stmt->affected_rows !== 1
+    ) {
+
+        $stmt->close();
+
+        throw new RuntimeException(
+            'transicion_equipo'
+        );
     }
 
     $stmt->close();
 
+
     /*
-     * 6. Confirmar toda la operación.
+     * Confirmar transacción.
      */
     $conexion->commit();
 
+
     /*
-     * Volver a solicitudes aprobadas.
+     * Regresar al listado.
      */
     header(
-        'Location: listar.php?estado=Aprobada&entregada=1'
+        'Location: listar.php?estado=Aprobada&ok=entrega'
     );
 
     exit();
+
 
 } catch (Throwable $e) {
 
     /*
-     * Si algo falla, deshacer TODO:
-     * - no se crea préstamo.
-     * - no cambia el estado del equipo.
+     * Revertir cualquier cambio realizado
+     * durante la transacción.
      */
-    if ($conexion->errno === 0 || true) {
-        try {
-            $conexion->rollback();
-        } catch (Throwable $rollbackError) {
-            // No hacer nada; se mantiene el error original.
-        }
-    }
+    $conexion->rollback();
 
-    $codigo = $e->getMessage();
 
-    $erroresPermitidos = [
+    /*
+     * Errores controlados.
+     */
+    $permitidos = [
         'solicitud',
         'estado',
+        'autorizador',
         'equipo',
         'ya_entregado',
         'estado_prestado',
-        'registro_prestamo',
-        'equipo_actualizacion'
+        'transicion_equipo'
     ];
 
-    if (!in_array($codigo, $erroresPermitidos, true)) {
-        $codigo = 'general';
-    }
+
+    $error = in_array(
+        $e->getMessage(),
+        $permitidos,
+        true
+    )
+        ? $e->getMessage()
+        : 'entrega';
+
 
     header(
         'Location: listar.php?estado=Aprobada&error=' .
-        urlencode($codigo)
+        urlencode($error)
     );
 
     exit();
-
-} finally {
-
-    /*
-     * Cerrar conexión.
-     */
-    if (isset($conexion) && $conexion instanceof mysqli) {
-        $conexion->close();
-    }
 }
+
+?>

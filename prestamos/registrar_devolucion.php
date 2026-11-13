@@ -21,6 +21,7 @@ $idPrestamo = filter_var(
     ['options' => ['min_range' => 1]]
 );
 
+$estadoDevolucion = trim($_POST['estado_devolucion'] ?? '');
 $condicionFinal = trim($_POST['condicion_final'] ?? '');
 $observaciones = trim($_POST['observaciones'] ?? '');
 
@@ -33,6 +34,16 @@ if (!$idPrestamo) {
 
 if ($idUsuarioSesion <= 0) {
     header('Location: ../login.php');
+    exit();
+}
+
+$estadosPermitidos = [
+    'normal',
+    'danado'
+];
+
+if (!in_array($estadoDevolucion, $estadosPermitidos, true)) {
+    header('Location: devolver.php?id=' . $idPrestamo . '&error=estado_devolucion');
     exit();
 }
 
@@ -54,6 +65,10 @@ if (mb_strlen($observaciones) > 1000) {
 try {
     $conexion->begin_transaction();
 
+    /*
+     * Bloqueamos el préstamo y consultamos
+     * el estado actual del equipo.
+     */
     $stmt = $conexion->prepare(
         "SELECT
             p.id_prestamo,
@@ -102,25 +117,40 @@ try {
         throw new RuntimeException('estado_equipo');
     }
 
+    /*
+     * Determinar el estado final del equipo.
+     *
+     * normal  -> Disponible
+     * danado  -> En mantenimiento
+     */
+    $nombreEstadoDestino =
+        $estadoDevolucion === 'danado'
+            ? 'En mantenimiento'
+            : 'Disponible';
+
     $stmt = $conexion->prepare(
         "SELECT id_estado
          FROM estados_equipo
-         WHERE nombre_estado = 'Disponible'
+         WHERE nombre_estado = ?
          LIMIT 1"
     );
 
+    $stmt->bind_param('s', $nombreEstadoDestino);
     $stmt->execute();
 
-    $estadoDisponible = $stmt->get_result()->fetch_assoc();
+    $estadoDestino = $stmt->get_result()->fetch_assoc();
 
     $stmt->close();
 
-    if (!$estadoDisponible) {
-        throw new RuntimeException('estado_disponible');
+    if (!$estadoDestino) {
+        throw new RuntimeException('estado_destino');
     }
 
-    $idEstadoDisponible = (int)$estadoDisponible['id_estado'];
+    $idEstadoDestino = (int)$estadoDestino['id_estado'];
 
+    /*
+     * Registrar la devolución del préstamo.
+     */
     $stmt = $conexion->prepare(
         "UPDATE prestamos
          SET
@@ -148,6 +178,9 @@ try {
 
     $stmt->close();
 
+    /*
+     * Actualizar el estado del equipo.
+     */
     $stmt = $conexion->prepare(
         "UPDATE equipos
          SET id_estado = ?
@@ -160,10 +193,12 @@ try {
            )"
     );
 
+    $idEquipo = (int)$prestamo['id_equipo'];
+
     $stmt->bind_param(
         'ii',
-        $idEstadoDisponible,
-        $prestamo['id_equipo']
+        $idEstadoDestino,
+        $idEquipo
     );
 
     $stmt->execute();
@@ -182,6 +217,7 @@ try {
     exit();
 
 } catch (Throwable $e) {
+
     $conexion->rollback();
 
     $codigo = $e->getMessage();
@@ -191,7 +227,7 @@ try {
         'estado_prestamo',
         'ya_devuelto',
         'estado_equipo',
-        'estado_disponible',
+        'estado_destino',
         'actualizacion_prestamo',
         'actualizacion_equipo'
     ];

@@ -93,7 +93,7 @@ if (
     isset($_GET['devuelta']) &&
     $_GET['devuelta'] === '1'
 ) {
-    $mensajeExito = 'La devolución se registró correctamente y el equipo volvió a estar disponible.';
+    $mensajeExito = 'La devolución se registró correctamente y el estado del equipo fue actualizado.';
 }
 
 if (
