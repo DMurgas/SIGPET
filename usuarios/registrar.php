@@ -3,6 +3,7 @@ require_once __DIR__ . '/../includes/verificar_rol.php';
 verificarPermiso('usuarios.registrar');
 require_once __DIR__ . '/../includes/csrf.php';
 require_once __DIR__ . '/../config/conexion.php';
+require_once __DIR__ . '/../includes/bitacora.php';
 
 $nombre = $_SESSION['nombres'] ?? '';
 $apellido = $_SESSION['apellidos'] ?? '';
@@ -64,7 +65,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt = $conexion->prepare('INSERT INTO usuarios (id_rol, nombres, apellidos, correo_institucional, codigo_institucional, password, activo) VALUES (?, ?, ?, ?, ?, ?, 1)');
                     $stmt->bind_param('isssss', $id_rol, $nombres, $apellidos, $correo, $codigoDb, $hash);
                     $stmt->execute();
+                    $idUsuarioNuevo = (int)$conexion->insert_id;
                     $stmt->close();
+                    registrarBitacora(
+                        $conexion,
+                        (int)($_SESSION['id_usuario'] ?? 0) ?: null,
+                        'Usuarios',
+                        'Registro de usuario',
+                        'usuarios',
+                        $idUsuarioNuevo,
+                        "Se registró al usuario {$nombres} {$apellidos} ({$correo}) con rol ID {$id_rol}."
+                    );
                     header('Location: listar.php?registrado=1');
                     exit();
                 }
@@ -75,12 +86,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $tokenCSRF = obtenerTokenCSRF();
 ?>
 <!DOCTYPE html>
-<html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Registrar usuario | SIGPET</title><link rel="stylesheet" href="../CSS/base.css"><link rel="stylesheet" href="../CSS/dashboard.css"><link rel="stylesheet" href="../CSS/usuarios.css"></head>
+<html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Registrar usuario | SIGPET</title>
+    <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg"><link rel="stylesheet" href="../CSS/base.css"><link rel="stylesheet" href="../CSS/dashboard.css"><link rel="stylesheet" href="../CSS/usuarios.css"></head>
 <body class="dashboard-body"><div class="dashboard-layout">
 <?php $rutaBase = '../'; $paginaActiva = 'usuarios'; require __DIR__ . '/../includes/sidebar.php'; ?>
 <main class="dashboard-main">
-<header class="dashboard-header"><div><span class="header-subtitle">ADMINISTRACIÓN DEL SISTEMA</span><h1>Registrar usuario</h1></div><div class="header-user"><div class="header-user-text"><strong><?= htmlspecialchars($nombre . ' ' . $apellido) ?></strong><span><?= htmlspecialchars($rol) ?></span></div><div class="user-avatar header-avatar"><?= htmlspecialchars(strtoupper(substr($nombre, 0, 1))) ?></div></div></header>
-<section class="users-intro"><h2>Nuevo usuario</h2><p>Completa la información para crear una cuenta dentro de SIGPET.</p></section>
+<header class="dashboard-header"><div><span class="header-subtitle">ADMINISTRACIÓN DEL SISTEMA</span><h1>Registrar usuario</h1><p class="header-desc">Completa la información para crear una cuenta dentro de SIGPET.</p></div></header>
 <section class="user-form-container">
 <?php if ($error !== ''): ?><div class="form-message error"><?= htmlspecialchars($error) ?></div><?php endif; ?>
 <form method="POST" action="registrar.php" class="user-form">

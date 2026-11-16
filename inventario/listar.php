@@ -52,6 +52,7 @@ $sql = '
         e.modelo,
         e.numero_serie,
         e.ubicacion,
+        e.descripcion,
         e.fecha_registro,
         t.nombre_tipo,
         t.id_tipo,
@@ -126,8 +127,20 @@ if ($valores) {
 $stmt->execute();
 
 $resultado = $stmt->get_result();
+$todosEquipos = $resultado->fetch_all(MYSQLI_ASSOC);
+$totalEquipos = count($todosEquipos);
 
-$totalEquipos = $resultado->num_rows;
+$porPagina = 8;
+$totalPaginas = max(1, (int)ceil($totalEquipos / $porPagina));
+$paginaActual = max(1, min($totalPaginas, (int)($_GET['pagina'] ?? 1)));
+$offset = ($paginaActual - 1) * $porPagina;
+$equiposPagina = array_slice($todosEquipos, $offset, $porPagina);
+
+function urlInventarioPagina(int $pag): string
+{
+    $q = array_merge($_GET, ['pagina' => $pag]);
+    return 'listar.php?' . http_build_query($q);
+}
 
 $puedeAdministrar =
     tienePermiso('inventario.registrar') ||
@@ -211,6 +224,7 @@ if (isset($_GET['registrado'])) {
     >
 
     <title>Inventario | SIGPET</title>
+    <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
 
     <link
         rel="stylesheet"
@@ -225,6 +239,11 @@ if (isset($_GET['registrado'])) {
     <link
         rel="stylesheet"
         href="../CSS/inventario.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="../CSS/prestamos.css"
     >
 
 </head>
@@ -256,94 +275,13 @@ if (isset($_GET['registrado'])) {
                     Inventario de equipos
                 </h1>
 
-            </div>
-
-            <div class="header-user">
-
-                <div class="header-user-text">
-
-                    <strong>
-                        <?= htmlspecialchars(
-                            $nombre . ' ' . $apellido
-                        ) ?>
-                    </strong>
-
-                    <span>
-                        <?= htmlspecialchars($rol) ?>
-                    </span>
-
-                </div>
-
-                <div class="user-avatar header-avatar">
-
-                    <?= htmlspecialchars(
-                        strtoupper(
-                            substr($nombre, 0, 1)
-                        )
-                    ) ?>
-
-                </div>
+                <p class="header-desc">
+                    Consulta las características, clasificación y estado actual de los equipos (<?= $totalEquipos ?> encontrado<?= $totalEquipos === 1 ? '' : 's' ?>).
+                </p>
 
             </div>
 
-        </header>
-
-
-        <section class="users-intro">
-
-            <h2>
-                Equipos registrados
-            </h2>
-
-            <p>
-                Consulta las características, clasificación y estado actual de los equipos tecnológicos.
-            </p>
-
-        </section>
-
-
-        <?php if ($mensaje !== ''): ?>
-
-            <div class="form-message <?= $tipoMensaje ?>">
-                <?= htmlspecialchars($mensaje) ?>
-            </div>
-
-        <?php endif; ?>
-
-
-        <section class="inventory-summary">
-
-            <div class="inventory-summary-card">
-
-                <span>
-                    Equipos encontrados
-                </span>
-
-                <strong>
-                    <?= $totalEquipos ?>
-                </strong>
-
-            </div>
-
-        </section>
-
-
-        <section class="inventory-container">
-
-            <div class="inventory-toolbar">
-
-                <div>
-
-                    <h3>
-                        Listado de equipos
-                    </h3>
-
-                    <p>
-                        Usa la búsqueda y los filtros para localizar equipos.
-                    </p>
-
-                </div>
-
+            <div class="header-actions">
 
                 <?php if (tienePermiso('inventario.registrar')): ?>
 
@@ -355,7 +293,6 @@ if (isset($_GET['registrado'])) {
                     </a>
 
                 <?php endif; ?>
-
 
                 <?php if (tienePermiso('prestamos.solicitar')): ?>
 
@@ -369,6 +306,20 @@ if (isset($_GET['registrado'])) {
                 <?php endif; ?>
 
             </div>
+
+        </header>
+
+
+        <?php if ($mensaje !== ''): ?>
+
+            <div class="form-message <?= $tipoMensaje ?>">
+                <?= htmlspecialchars($mensaje) ?>
+            </div>
+
+        <?php endif; ?>
+
+
+        <section class="inventory-container">
 
 
             <form
@@ -531,13 +482,9 @@ if (isset($_GET['registrado'])) {
                                 Estado
                             </th>
 
-                            <?php if ($puedeAdministrar): ?>
-
-                                <th>
-                                    Acciones
-                                </th>
-
-                            <?php endif; ?>
+                            <th>
+                                Acciones
+                            </th>
 
                         </tr>
 
@@ -546,19 +493,78 @@ if (isset($_GET['registrado'])) {
 
                     <tbody>
 
-                    <?php if ($resultado->num_rows > 0): ?>
+                    <?php if (!empty($equiposPagina)): ?>
 
-                        <?php while ($equipo = $resultado->fetch_assoc()): ?>
+                        <?php foreach ($equiposPagina as $equipo): ?>
+                            <?php
+                            $idEst = (int) $equipo['id_estado'];
+                            $toneEq = $idEst === 1 ? 'success'
+                                : ($idEst === 2 ? 'info'
+                                : ($idEst === 3 ? 'warning'
+                                : ($idEst === 5 ? 'danger' : 'neutral')));
+                            $seccionesEq = [];
+                            if (!empty($equipo['descripcion'])) {
+                                $seccionesEq[] = [
+                                    'label' => 'Descripción técnica y accesorios',
+                                    'text'  => (string) $equipo['descripcion'],
+                                ];
+                            }
+                            $payloadEq = [
+                                'eyebrow'  => 'Ficha de equipo · ' . $equipo['codigo_inventario'],
+                                'title'    => (string) $equipo['nombre'],
+                                'subtitle' => $equipo['nombre_tipo'],
+                                'badge'    => [
+                                    'label' => (string) $equipo['nombre_estado'],
+                                    'tone'  => $toneEq,
+                                ],
+                                'meta'     => [
+                                    [
+                                        'label' => 'Código de inventario',
+                                        'value' => (string) $equipo['codigo_inventario'],
+                                    ],
+                                    [
+                                        'label' => 'Marca / modelo',
+                                        'value' => trim(($equipo['marca'] ?? '') . ' ' . ($equipo['modelo'] ?? '')) ?: 'No especificado',
+                                    ],
+                                    [
+                                        'label' => 'Número de serie',
+                                        'value' => !empty($equipo['numero_serie']) ? (string) $equipo['numero_serie'] : 'No registrado',
+                                    ],
+                                    [
+                                        'label' => 'Ubicación actual',
+                                        'value' => !empty($equipo['ubicacion']) ? (string) $equipo['ubicacion'] : 'No especificada',
+                                    ],
+                                    [
+                                        'label' => 'Categoría',
+                                        'value' => (string) $equipo['nombre_tipo'],
+                                    ],
+                                    [
+                                        'label' => 'Fecha de registro',
+                                        'value' => !empty($equipo['fecha_registro']) ? date('d/m/Y H:i', strtotime($equipo['fecha_registro'])) : 'No registrada',
+                                    ],
+                                ],
+                                'sections' => $seccionesEq,
+                                'actionUrl'   => (tienePermiso('prestamos.solicitar') && $equipo['nombre_estado'] === 'Disponible')
+                                    ? '../prestamos/solicitar.php?id_equipo=' . (int) $equipo['id_equipo']
+                                    : null,
+                                'actionLabel' => 'Solicitar préstamo',
+                            ];
+                            $detalleEqJson = htmlspecialchars(
+                                json_encode($payloadEq, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP),
+                                ENT_QUOTES,
+                                'UTF-8'
+                            );
+                            ?>
 
-                            <tr>
+                            <tr class="sigpet-row-clickable" data-detail="<?= $detalleEqJson ?>">
 
                                 <td>
 
-                                    <strong>
+                                    <span class="sigpet-equip-tag">
                                         <?= htmlspecialchars(
                                             $equipo['codigo_inventario']
                                         ) ?>
-                                    </strong>
+                                    </span>
 
                                 </td>
 
@@ -632,14 +638,16 @@ if (isset($_GET['registrado'])) {
                                 </td>
 
 
-                                <?php if ($puedeAdministrar): ?>
-
                                     <td>
 
                                         <div class="action-buttons">
 
+                                            <button type="button" class="sigpet-detail-btn sigpet-detail-trigger" aria-label="Ver detalle de <?= htmlspecialchars($equipo['codigo_inventario']) ?>">
+                                                <?= sigpetIcono('eye', 15) ?>
+                                                <span>Ver detalle</span>
+                                            </button>
 
-                                            <?php if (tienePermiso('inventario.editar')): ?>
+                                            <?php if ($puedeAdministrar && tienePermiso('inventario.editar')): ?>
 
                                                 <a
                                                     class="action-button edit-action"
@@ -651,7 +659,7 @@ if (isset($_GET['registrado'])) {
                                             <?php endif; ?>
 
 
-                                            <?php if (tienePermiso('inventario.dar_baja')): ?>
+                                            <?php if ($puedeAdministrar && tienePermiso('inventario.dar_baja')): ?>
 
 
                                                 <?php if ((int)$equipo['id_estado'] === 1): ?>
@@ -834,19 +842,16 @@ if (isset($_GET['registrado'])) {
 
                                     </td>
 
-                                <?php endif; ?>
-
-
                             </tr>
 
-                        <?php endwhile; ?>
+                        <?php endforeach; ?>
 
                     <?php else: ?>
 
                         <tr>
 
                             <td
-                                colspan="<?= $puedeAdministrar ? 7 : 6 ?>"
+                                colspan="7"
                                 class="empty-table"
                             >
 
@@ -871,6 +876,19 @@ if (isset($_GET['registrado'])) {
                 </table>
 
             </div>
+
+            <?php if ($totalPaginas > 1): ?>
+                <div class="sigpet-pagination">
+                    <span>Mostrando <?= $offset + 1 ?>–<?= min($offset + $porPagina, $totalEquipos) ?> de <?= $totalEquipos ?></span>
+                    <div class="sigpet-page-links">
+                        <a class="sigpet-page-link <?= $paginaActual <= 1 ? 'disabled' : '' ?>" href="<?= htmlspecialchars(urlInventarioPagina(max(1, $paginaActual - 1))) ?>">Anterior</a>
+                        <?php for ($p = 1; $p <= $totalPaginas; $p++): ?>
+                            <a class="sigpet-page-link <?= $p === $paginaActual ? 'active' : '' ?>" href="<?= htmlspecialchars(urlInventarioPagina($p)) ?>"><?= $p ?></a>
+                        <?php endfor; ?>
+                        <a class="sigpet-page-link <?= $paginaActual >= $totalPaginas ? 'disabled' : '' ?>" href="<?= htmlspecialchars(urlInventarioPagina(min($totalPaginas, $paginaActual + 1))) ?>">Siguiente</a>
+                    </div>
+                </div>
+            <?php endif; ?>
 
         </section>
 

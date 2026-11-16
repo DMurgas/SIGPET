@@ -93,6 +93,11 @@ $sql = "
         u.apellidos,
         u.codigo_institucional,
 
+        ue.nombres AS entregado_nombres,
+        ue.apellidos AS entregado_apellidos,
+        ua.nombres AS autorizado_nombres,
+        ua.apellidos AS autorizado_apellidos,
+
         e.codigo_inventario,
         e.nombre AS nombre_equipo,
         e.marca,
@@ -106,6 +111,12 @@ $sql = "
 
     INNER JOIN usuarios u
         ON u.id_usuario = p.id_usuario
+
+    LEFT JOIN usuarios ue
+        ON ue.id_usuario = p.entregado_por
+
+    LEFT JOIN usuarios ua
+        ON ua.id_usuario = p.autorizado_por
 
     INNER JOIN equipos e
         ON e.id_equipo = p.id_equipo
@@ -176,6 +187,18 @@ if ($tipos !== '') {
 $stmt->execute();
 
 $historial = $stmt->get_result();
+$todosHistorial = $historial->fetch_all(MYSQLI_ASSOC);
+$totalHistorial = count($todosHistorial);
+$porPagina = 8;
+$totalPaginas = max(1, (int)ceil($totalHistorial / $porPagina));
+$paginaActual = max(1, min($totalPaginas, (int)($_GET['pagina'] ?? 1)));
+$offset = ($paginaActual - 1) * $porPagina;
+$historialPagina = array_slice($todosHistorial, $offset, $porPagina);
+
+function urlHistorialPagina(int $pag): string
+{
+    return 'historial.php?' . http_build_query(array_merge($_GET, ['pagina' => $pag]));
+}
 
 ?>
 
@@ -194,6 +217,7 @@ $historial = $stmt->get_result();
     <title>
         Historial de préstamos | SIGPET
     </title>
+    <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
 
     <link
         rel="stylesheet"
@@ -249,80 +273,16 @@ $historial = $stmt->get_result();
                     Historial de préstamos
                 </h1>
 
-            </div>
-
-
-            <div class="header-user">
-
-                <div class="header-user-text">
-
-                    <strong>
-                        <?= htmlspecialchars(
-                            $nombreSesion . ' ' . $apellidoSesion
-                        ) ?>
-                    </strong>
-
-                    <span>
-                        <?= htmlspecialchars(
-                            $rolSesion
-                        ) ?>
-                    </span>
-
-                </div>
-
-
-                <div class="user-avatar header-avatar">
-
-                    <?= htmlspecialchars(
-                        strtoupper(
-                            substr(
-                                $nombreSesion,
-                                0,
-                                1
-                            )
-                        )
-                    ) ?>
-
-                </div>
+                <p class="header-desc">
+                    Consulta los préstamos realizados por usuario, equipo y estado.
+                </p>
 
             </div>
 
         </header>
 
 
-
-        <section class="users-intro">
-
-            <h2>
-                Historial de préstamos
-            </h2>
-
-            <p>
-                Consulta los préstamos por usuario, equipo y estado.
-            </p>
-
-        </section>
-
-
-
         <section class="inventory-container">
-
-
-            <div class="inventory-toolbar">
-
-                <div>
-
-                    <h3>
-                        Filtros
-                    </h3>
-
-                    <p>
-                        Selecciona los criterios de búsqueda.
-                    </p>
-
-                </div>
-
-            </div>
 
 
 
@@ -540,18 +500,83 @@ $historial = $stmt->get_result();
                     <tbody>
 
 
-                    <?php if (
-                        $historial->num_rows > 0
-                    ): ?>
+                    <?php if (!empty($historialPagina)): ?>
 
 
-                        <?php while (
-                            $registro =
-                            $historial->fetch_assoc()
-                        ): ?>
+                        <?php foreach ($historialPagina as $registro): ?>
+                            <?php
+                            $estadoLimpio = strtolower((string) $registro['estado_prestamo']);
+                            $toneBadge = $estadoLimpio === 'devuelto' ? 'devuelto' : ($estadoLimpio === 'atrasado' ? 'danger' : 'prestado');
+                            $entregadoNombre = trim((string) (($registro['entregado_nombres'] ?? '') . ' ' . ($registro['entregado_apellidos'] ?? '')));
+                            $autorizadoNombre = trim((string) (($registro['autorizado_nombres'] ?? '') . ' ' . ($registro['autorizado_apellidos'] ?? '')));
+                            $seccionesDetalle = [
+                                [
+                                    'label' => 'Propósito de uso',
+                                    'text'  => (string) ($registro['proposito'] ?? ''),
+                                ],
+                                [
+                                    'label' => 'Condición inicial al entregar',
+                                    'text'  => (string) ($registro['condicion_inicial'] ?? ''),
+                                ],
+                            ];
+                            if (!empty($registro['condicion_final'])) {
+                                $seccionesDetalle[] = [
+                                    'label' => 'Condición final al devolver',
+                                    'text'  => (string) $registro['condicion_final'],
+                                    'tone'  => 'success',
+                                ];
+                            }
+                            if (!empty($registro['observaciones'])) {
+                                $seccionesDetalle[] = [
+                                    'label' => 'Observaciones registradas',
+                                    'text'  => (string) $registro['observaciones'],
+                                    'tone'  => $estadoLimpio === 'atrasado' ? 'warning' : '',
+                                ];
+                            }
+                            $payloadDetalle = [
+                                'eyebrow'  => 'Préstamo #' . (int) $registro['id_prestamo'] . ' · Solicitud #' . (int) $registro['id_solicitud'],
+                                'title'    => $registro['codigo_inventario'] . ' — ' . $registro['nombre_equipo'],
+                                'subtitle' => trim((string) (($registro['marca'] ?? '') . ' ' . ($registro['modelo'] ?? ''))),
+                                'badge'    => [
+                                    'label' => (string) $registro['estado_prestamo'],
+                                    'tone'  => $toneBadge,
+                                ],
+                                'meta'     => [
+                                    [
+                                        'label' => 'Solicitante',
+                                        'value' => trim($registro['nombres'] . ' ' . $registro['apellidos'] . (!empty($registro['codigo_institucional']) ? ' (' . $registro['codigo_institucional'] . ')' : '')),
+                                    ],
+                                    [
+                                        'label' => 'Fecha de entrega',
+                                        'value' => date('d/m/Y H:i', strtotime($registro['fecha_entrega'])),
+                                    ],
+                                    [
+                                        'label' => 'Devolución prevista',
+                                        'value' => date('d/m/Y', strtotime($registro['fecha_devolucion_prevista'])),
+                                    ],
+                                    [
+                                        'label' => 'Devolución real',
+                                        'value' => !empty($registro['fecha_devolucion_real']) ? date('d/m/Y H:i', strtotime($registro['fecha_devolucion_real'])) : 'Pendiente de devolución',
+                                    ],
+                                    [
+                                        'label' => 'Entregado por',
+                                        'value' => $entregadoNombre !== '' ? $entregadoNombre : 'No especificado',
+                                    ],
+                                    [
+                                        'label' => 'Autorizado por',
+                                        'value' => $autorizadoNombre !== '' ? $autorizadoNombre : 'No especificado',
+                                    ],
+                                ],
+                                'sections' => $seccionesDetalle,
+                            ];
+                            $detalleJson = htmlspecialchars(
+                                json_encode($payloadDetalle, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP),
+                                ENT_QUOTES,
+                                'UTF-8'
+                            );
+                            ?>
 
-
-                            <tr>
+                            <tr class="sigpet-row-clickable" data-detail="<?= $detalleJson ?>">
 
 
                                 <td>
@@ -732,96 +757,16 @@ $historial = $stmt->get_result();
 
 
                                 <td>
-
-
-                                    <div class="table-subtext">
-
-                                        <strong>
-                                            Condición inicial:
-                                        </strong>
-
-                                        <?= htmlspecialchars(
-                                            $registro[
-                                                'condicion_inicial'
-                                            ]
-                                        ) ?>
-
-                                    </div>
-
-
-
-                                    <?php if (
-                                        !empty(
-                                            $registro[
-                                                'condicion_final'
-                                            ]
-                                        )
-                                    ): ?>
-
-                                        <div class="table-subtext">
-
-                                            <strong>
-                                                Condición final:
-                                            </strong>
-
-                                            <?= htmlspecialchars(
-                                                $registro[
-                                                    'condicion_final'
-                                                ]
-                                            ) ?>
-
-                                        </div>
-
-                                    <?php endif; ?>
-
-
-
-                                    <?php if (
-                                        !empty(
-                                            $registro[
-                                                'observaciones'
-                                            ]
-                                        )
-                                    ): ?>
-
-                                        <div class="table-subtext">
-
-                                            <strong>
-                                                Observaciones:
-                                            </strong>
-
-                                            <?= htmlspecialchars(
-                                                $registro[
-                                                    'observaciones'
-                                                ]
-                                            ) ?>
-
-                                        </div>
-
-                                    <?php endif; ?>
-
-
-
-                                    <div class="table-subtext">
-
-                                        <strong>
-                                            Propósito:
-                                        </strong>
-
-                                        <?= htmlspecialchars(
-                                            $registro[
-                                                'proposito'
-                                            ]
-                                        ) ?>
-
-                                    </div>
-
+                                    <button type="button" class="sigpet-detail-btn sigpet-detail-trigger" aria-label="Ver detalle del préstamo #<?= (int)$registro['id_prestamo'] ?>">
+                                        <?= sigpetIcono('eye', 15) ?>
+                                        <span>Ver detalle</span>
+                                    </button>
                                 </td>
 
                             </tr>
 
 
-                        <?php endwhile; ?>
+                        <?php endforeach; ?>
 
 
                     <?php else: ?>
@@ -848,6 +793,19 @@ $historial = $stmt->get_result();
                 </table>
 
             </div>
+
+            <?php if ($totalPaginas > 1): ?>
+                <div class="sigpet-pagination">
+                    <span>Mostrando <?= $offset + 1 ?>–<?= min($offset + $porPagina, $totalHistorial) ?> de <?= $totalHistorial ?></span>
+                    <div class="sigpet-page-links">
+                        <a class="sigpet-page-link <?= $paginaActual <= 1 ? 'disabled' : '' ?>" href="<?= htmlspecialchars(urlHistorialPagina(max(1, $paginaActual - 1))) ?>">Anterior</a>
+                        <?php for ($p = 1; $p <= $totalPaginas; $p++): ?>
+                            <a class="sigpet-page-link <?= $p === $paginaActual ? 'active' : '' ?>" href="<?= htmlspecialchars(urlHistorialPagina($p)) ?>"><?= $p ?></a>
+                        <?php endfor; ?>
+                        <a class="sigpet-page-link <?= $paginaActual >= $totalPaginas ? 'disabled' : '' ?>" href="<?= htmlspecialchars(urlHistorialPagina(min($totalPaginas, $paginaActual + 1))) ?>">Siguiente</a>
+                    </div>
+                </div>
+            <?php endif; ?>
 
         </section>
 

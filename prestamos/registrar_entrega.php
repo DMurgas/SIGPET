@@ -5,6 +5,7 @@ verificarPermiso('prestamos.gestionar');
 
 require_once __DIR__ . '/../includes/csrf.php';
 require_once __DIR__ . '/../config/conexion.php';
+require_once __DIR__ . '/../includes/bitacora.php';
 
 /*
  * La operación solo puede ejecutarse mediante POST
@@ -314,6 +315,7 @@ try {
     );
 
     $stmt->execute();
+    $idPrestamoNuevo = (int)$conexion->insert_id;
 
     $stmt->close();
 
@@ -368,6 +370,15 @@ try {
 
     $stmt->close();
 
+    registrarBitacora(
+        $conexion,
+        $idUsuarioEntrega,
+        'Préstamos',
+        'Entrega de equipo',
+        'prestamos',
+        $idPrestamoNuevo,
+        "Se registró la entrega del préstamo #{$idPrestamoNuevo} (solicitud #{$idSolicitud}) para el equipo #{$idEquipo} al usuario #{$idSolicitante}. Equipo pasó de Reservado a Prestado. Condición inicial: {$condicionInicial}"
+    );
 
     /*
      * Confirmar transacción.

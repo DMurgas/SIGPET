@@ -3,6 +3,8 @@ require_once __DIR__ . '/../includes/verificar_rol.php';
 verificarPermiso('prestamos.gestionar');
 require_once __DIR__ . '/../includes/csrf.php';
 require_once __DIR__ . '/../config/conexion.php';
+require_once __DIR__ . '/../includes/reservas_helper.php';
+require_once __DIR__ . '/../includes/bitacora.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: listar.php');
@@ -47,24 +49,17 @@ try {
         throw new RuntimeException('equipo');
     }
 
-    // Segunda validación para evitar aprobar dos solicitudes solapadas.
-    $stmt = $conexion->prepare(
-        "SELECT id_solicitud
-         FROM solicitudes_prestamo
-         WHERE id_equipo = ?
-           AND id_solicitud <> ?
-           AND estado_solicitud = 'Aprobada'
-           AND fecha_inicio < ?
-           AND fecha_devolucion_prevista > ?
-         LIMIT 1
-         FOR UPDATE"
+    // Segunda validación para evitar aprobar dos solicitudes solapadas o en conflicto con préstamo activo (RF-09).
+    $conflicto = buscarConflictoReserva(
+        $conexion,
+        (int)$solicitud['id_equipo'],
+        $solicitud['fecha_inicio'],
+        $solicitud['fecha_devolucion_prevista'],
+        (int)$idSolicitud,
+        true
     );
-    $stmt->bind_param('iiss', $solicitud['id_equipo'], $idSolicitud, $solicitud['fecha_devolucion_prevista'], $solicitud['fecha_inicio']);
-    $stmt->execute();
-    $solapada = $stmt->get_result()->num_rows > 0;
-    $stmt->close();
 
-    if ($solapada) {
+    if ($conflicto !== null && ($conflicto['origen'] === 'prestamo' || $conflicto['estado'] === 'Aprobada')) {
         throw new RuntimeException('solapada');
     }
 
@@ -90,6 +85,16 @@ try {
         throw new RuntimeException('equipo_actualizacion');
     }
     $stmt->close();
+
+    registrarBitacora(
+        $conexion,
+        $idDecisor,
+        'Préstamos',
+        'Aprobación de solicitud',
+        'solicitudes_prestamo',
+        (int)$idSolicitud,
+        "Se aprobó la solicitud #{$idSolicitud} para el equipo #{$solicitud['id_equipo']} ({$solicitud['fecha_inicio']} al {$solicitud['fecha_devolucion_prevista']}) y el equipo pasó de Disponible a Reservado."
+    );
 
     $conexion->commit();
     header('Location: listar.php?estado=Pendiente&aprobada=1');

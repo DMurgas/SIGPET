@@ -1,6 +1,8 @@
 
 body {
-    background: #f1f5f9;
+    background-color: #f4f7fb;
+    background-image: radial-gradient(#d5dfec 1px, transparent 1px);
+    background-size: 22px 22px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -24,7 +26,7 @@ body {
 /* PANEL INFORMATIVO */
 
 .panel-informativo {
-    background: linear-gradient(145deg, #102c50, #174c7e);
+    background: linear-gradient(155deg, #0f2942 0%, #153b64 65%, #1d4ed8 100%);
     color: white;
     padding: 45px;
     display: flex;
@@ -44,13 +46,14 @@ body {
 .marca-icono {
     width: 42px;
     height: 42px;
-    background: #ffffff;
-    color: #174c7e;
+    background: #2563eb;
+    color: #ffffff;
     border-radius: 10px;
     display: flex;
     justify-content: center;
     align-items: center;
     font-size: 25px;
+    font-weight: 800;
 }
 
 .informacion {
@@ -58,7 +61,7 @@ body {
 }
 
 .etiqueta {
-    color: #8fc9ff;
+    color: #93c5fd;
     font-size: 12px;
     font-weight: bold;
     letter-spacing: 2px;
@@ -97,7 +100,7 @@ body {
 }
 
 .bienvenida {
-    color: #2876b9;
+    color: #2563eb;
     font-size: 12px;
     font-weight: bold;
     letter-spacing: 2px;
@@ -140,8 +143,8 @@ body {
 }
 
 .campo input:focus {
-    border-color: #2876b9;
-    box-shadow: 0 0 0 3px rgba(40, 118, 185, 0.12);
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
 }
 
 .campo input::placeholder {
@@ -153,7 +156,7 @@ body {
 .boton-login {
     width: 100%;
     padding: 15px;
-    background: #174c7e;
+    background: #0f2942;
     color: white;
     border: none;
     border-radius: 8px;
@@ -167,7 +170,7 @@ body {
 }
 
 .boton-login:hover {
-    background: #10365e;
+    background: #2563eb;
 }
 
 .boton-login span {

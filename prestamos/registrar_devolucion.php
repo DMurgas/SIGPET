@@ -4,6 +4,7 @@ verificarPermiso('prestamos.gestionar');
 
 require_once __DIR__ . '/../includes/csrf.php';
 require_once __DIR__ . '/../config/conexion.php';
+require_once __DIR__ . '/../includes/bitacora.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: listar.php?estado=Aprobada');
@@ -54,6 +55,11 @@ if ($condicionFinal === '') {
 
 if (mb_strlen($condicionFinal) > 500) {
     header('Location: devolver.php?id=' . $idPrestamo . '&error=condicion');
+    exit();
+}
+
+if ($estadoDevolucion === 'danado' && $observaciones === '') {
+    header('Location: devolver.php?id=' . $idPrestamo . '&error=observaciones_dano');
     exit();
 }
 
@@ -208,6 +214,27 @@ try {
     }
 
     $stmt->close();
+
+    // Resolver automáticamente alertas pendientes vinculadas al préstamo devuelto.
+    $stmtAlerta = $conexion->prepare(
+        "UPDATE alertas
+         SET resuelta = 1
+         WHERE id_prestamo = ?
+           AND resuelta = 0"
+    );
+    $stmtAlerta->bind_param('i', $idPrestamo);
+    $stmtAlerta->execute();
+    $stmtAlerta->close();
+
+    registrarBitacora(
+        $conexion,
+        $idUsuarioSesion,
+        'Devoluciones',
+        'Devolución de equipo',
+        'prestamos',
+        (int)$idPrestamo,
+        "Se registró la devolución del préstamo #{$idPrestamo} (equipo #{$idEquipo}). Estado del equipo cambió de Prestado a {$nombreEstadoDestino}. Condición final: {$condicionFinal}" . ($observaciones !== '' ? " | Obs: {$observaciones}" : '')
+    );
 
     $conexion->commit();
 

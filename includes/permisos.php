@@ -18,7 +18,14 @@ $permisos = [
 
         "prestamos.solicitar",
         "prestamos.gestionar",
-        "prestamos.historial"
+        "prestamos.historial",
+
+        "reservas.consultar",
+        "reservas.gestionar",
+        "alertas.consultar",
+        "alertas.gestionar",
+        "reportes.consultar",
+        "bitacora.consultar"
     ],
 
     "Encargado de préstamos" => [
@@ -30,7 +37,14 @@ $permisos = [
         "inventario.buscar_disponibles",
 
         "prestamos.gestionar",
-        "prestamos.historial"
+        "prestamos.historial",
+
+        "reservas.consultar",
+        "reservas.gestionar",
+        "alertas.consultar",
+        "alertas.gestionar",
+        "reportes.consultar",
+        "bitacora.consultar"
     ],
 
     "Estudiante" => [
@@ -38,7 +52,9 @@ $permisos = [
         "inventario.consultar_estado",
         "inventario.buscar_disponibles",
 
-        "prestamos.solicitar"
+        "prestamos.solicitar",
+        "reservas.consultar",
+        "alertas.consultar"
     ],
 
     "Docente" => [
@@ -46,7 +62,9 @@ $permisos = [
         "inventario.consultar_estado",
         "inventario.buscar_disponibles",
 
-        "prestamos.solicitar"
+        "prestamos.solicitar",
+        "reservas.consultar",
+        "alertas.consultar"
     ],
 
     "Coordinador académico" => [
@@ -54,7 +72,11 @@ $permisos = [
         "inventario.consultar_estado",
         "inventario.buscar_disponibles",
 
-        "prestamos.historial"
+        "prestamos.historial",
+        "reservas.consultar",
+        "alertas.consultar",
+        "reportes.consultar",
+        "bitacora.consultar"
     ]
 ];
 
