@@ -1,16 +1,16 @@
-# SIGPET — Incrementos 1 y 2
+# SIGPET — Incrementos 1, 2, 3 y 4
 
-Sistema web académico para la gestión de usuarios, inventario y préstamos de equipos tecnológicos.
+Sistema web académico para la gestión de usuarios, inventario, reservas, préstamos, alertas, reportes y bitácora de equipos tecnológicos.
 
-La versión actual integra las funcionalidades correspondientes al **Incremento 1** y al **Incremento 2**, incluyendo la gestión de usuarios, inventario, solicitudes de préstamo, aprobación y rechazo, entrega, devolución, actualización de estados, mantenimiento e historial de préstamos.
+La versión actual integra las funcionalidades correspondientes a los **Incrementos 1, 2, 3 y 4**.
 
 ## Tecnologías
 
 - PHP 8.1 o superior
 - MySQL / MariaDB
-- XAMPP
+- XAMPP / Servidor embebido PHP
 - HTML y CSS
-- JavaScript nativo para confirmaciones del navegador
+- JavaScript nativo para navegación parcial sin recarga, modal de detalle, notificaciones flotantes y confirmaciones del navegador
 
 ## Instalación local con XAMPP
 
@@ -28,7 +28,11 @@ La versión actual integra las funcionalidades correspondientes al **Incremento 
 
    `database/sigpet.sql`
 
-   El script crea la base de datos `sigpet`, selecciona dicha base y crea las tablas necesarias para los Incrementos 1 y 2.
+   El script crea la base de datos `sigpet`, selecciona dicha base y crea las tablas, vistas y relaciones necesarias para los Incrementos 1, 2, 3 y 4.
+
+   Opcionalmente, para cargar datos de prueba completos (usuarios en los 5 roles, equipos, solicitudes, préstamos activos/históricos, alertas y registros de bitácora), importar a continuación:
+
+   `database/seed_prueba.sql`
 
 5. Revisar:
 
@@ -220,3 +224,70 @@ Prestado
 Devolución
    ├── Buen estado → Disponible
    └── Con daños   → En mantenimiento
+```
+
+## Incremento 3 — Reservas y reglas de préstamo
+
+El Incremento 3 incorpora la planificación por rango de fechas, la detección de traslapes y las reglas académicas de control para las solicitudes.
+
+### Disponibilidad y agenda de reservas
+
+- Consulta de disponibilidad por período (`fecha_inicio` a `fecha_fin`) desde `prestamos/reservas.php`.
+- Filtros por tipo de equipo y texto libre para identificar equipos disponibles u ocupados en el rango consultado.
+- Agenda unificada de reservas pendientes, aprobadas y préstamos en curso con indicación de traslapes.
+
+### Validación de conflictos de horario
+
+- Verificación transaccional de traslapes inclusivos en `includes/reservas_helper.php` (`buscarConflictoReserva()`).
+- Bloqueo en el servidor antes de registrar una solicitud o aprobarla si existe cruce con otra solicitud `Pendiente`, `Aprobada` o un préstamo `Prestado`.
+- Integración directa en `prestamos/solicitar.php` y `prestamos/aprobar.php`.
+
+### Bloqueo por préstamos vencidos y autorización excepcional
+
+- Bloqueo automático de nuevas solicitudes cuando el usuario mantiene préstamos vencidos sin devolver.
+- Flujo de supervisión en `prestamos/reservas.php?tab=vencidos` mediante la tabla `autorizaciones_vencido`:
+  - Registro de autorización excepcional por parte del encargado con motivo obligatorio.
+  - Revocación de excepciones activas en cualquier momento.
+
+### Prioridad académica y cancelación lógica
+
+- Marcado automático o asistido de prioridad (`es_prioridad`) para solicitudes docentes.
+- Priorización visual y de ordenamiento en la atención de solicitudes (`prestamos/listar.php` y `dashboard.php`).
+- Cancelación de solicitudes en estado `Pendiente` mediante `prestamos/cancelar.php`, conservando el registro como `Cancelada` para trazabilidad.
+
+## Incremento 4 — Alertas, reportes, bitácora y experiencia de uso
+
+El Incremento 4 añade seguimiento preventivo, análisis operativo, auditoría inmutable y mejoras visuales en todo el sistema.
+
+### Alertas por vencimiento y atraso
+
+- Detección automática y persistente en la tabla `alertas` (`includes/alertas.php`, `prestamos/alertas.php`):
+  - Alertas de préstamos próximos a vencer (hasta 2 días antes de la fecha prevista).
+  - Alertas de préstamos atrasados con cálculo de días de demora.
+  - Destinatarios diferenciados para el solicitante y el encargado de préstamos.
+- Evitación de duplicados mediante clave de seguimiento, marcado de lectura individual o masivo y cierre automático al registrar la devolución.
+
+### Reportes operativos y exportación
+
+- Módulo `reportes/index.php` con filtros por período de fechas y medición del tiempo de generación de cada consulta:
+  - Equipos más solicitados.
+  - Préstamos atrasados y usuarios con demora.
+  - Uso por período, categoría de equipo y rol.
+- Exportación a archivo CSV compatible con UTF-8 desde `reportes/exportar.php` y vista optimizada para impresión.
+
+### Bitácora de auditoría
+
+- Registro histórico inmutable en la tabla `bitacora` mediante `includes/bitacora.php`.
+- Cobertura de eventos clave:
+  - Inicio y cierre de sesión.
+  - Registro, edición y cambio de estado de usuarios y equipos.
+  - Solicitudes, aprobaciones, rechazos, cancelaciones, entregas y devoluciones.
+  - Autorizaciones excepcionales y generación de alertas.
+- Consulta y filtrado en `bitacora/listar.php` por módulo, usuario, rango de fechas y texto.
+
+### Interfaz, navegación y datos de prueba
+
+- Centro de control renovado (`dashboard.php`) con indicadores operativos, accesos rápidos según permisos y panel de seguimiento.
+- Barra lateral colapsable con iconografía SVG vectorial (`includes/sidebar.php`, `includes/iconos.php`).
+- Navegación parcial sin parpadeos, notificaciones flotantes cerrables y modal de lectura cómoda para filas de tablas (`JS/sigpet-spa.js`, `CSS/dashboard.css`) integrado en `prestamos/historial.php`, `prestamos/listar.php`, `prestamos/mis_solicitudes.php`, `bitacora/listar.php` e `inventario/listar.php`.
+- Datos semilla de prueba en `database/seed_prueba.sql` para validar los flujos de todos los roles.

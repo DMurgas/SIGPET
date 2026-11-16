@@ -1,7 +1,7 @@
 -- ============================================================
 -- SIGPET - Sistema de Gestión de Préstamos de Equipos Tecnológicos
 -- Base de datos: sigpet
--- Incrementos 1 y 2
+-- Incrementos 1, 2, 3 y 4
 -- ============================================================
 
 -- ============================================================
@@ -194,6 +194,7 @@ CREATE TABLE `solicitudes_prestamo` (
   `fecha_inicio` date NOT NULL,
   `fecha_devolucion_prevista` date NOT NULL,
   `proposito` varchar(500) NOT NULL,
+  `es_prioridad` tinyint(1) NOT NULL DEFAULT 0,
   `estado_solicitud` varchar(20) NOT NULL DEFAULT 'Pendiente',
   `motivo_rechazo` varchar(500) DEFAULT NULL,
   `fecha_solicitud` timestamp NOT NULL DEFAULT current_timestamp(),
@@ -219,6 +220,56 @@ CREATE TABLE `prestamos` (
   `fecha_devolucion_real` datetime DEFAULT NULL,
   `condicion_final` varchar(500) DEFAULT NULL,
   `observaciones` varchar(1000) DEFAULT NULL,
+  `fecha_registro` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- ============================================================
+-- TABLA: autorizaciones_vencido
+-- Incremento 3 (RN-03)
+-- ============================================================
+
+CREATE TABLE `autorizaciones_vencido` (
+  `id_autorizacion` int(11) NOT NULL,
+  `id_usuario` int(11) NOT NULL,
+  `autorizado_por` int(11) NOT NULL,
+  `motivo` varchar(500) NOT NULL,
+  `activa` tinyint(1) NOT NULL DEFAULT 1,
+  `id_solicitud_uso` int(11) DEFAULT NULL,
+  `fecha_autorizacion` timestamp NOT NULL DEFAULT current_timestamp(),
+  `fecha_uso` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- ============================================================
+-- TABLA: alertas
+-- Incremento 4 (RF-14)
+-- ============================================================
+
+CREATE TABLE `alertas` (
+  `id_alerta` int(11) NOT NULL,
+  `id_prestamo` int(11) NOT NULL,
+  `id_usuario_destino` int(11) NOT NULL,
+  `tipo_alerta` varchar(30) NOT NULL,
+  `titulo` varchar(150) NOT NULL,
+  `mensaje` varchar(600) NOT NULL,
+  `leida` tinyint(1) NOT NULL DEFAULT 0,
+  `resuelta` tinyint(1) NOT NULL DEFAULT 0,
+  `fecha_generacion` timestamp NOT NULL DEFAULT current_timestamp(),
+  `fecha_lectura` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- ============================================================
+-- TABLA: bitacora
+-- Incremento 4 (RF-18)
+-- ============================================================
+
+CREATE TABLE `bitacora` (
+  `id_bitacora` int(11) NOT NULL,
+  `id_usuario` int(11) DEFAULT NULL,
+  `modulo` varchar(50) NOT NULL,
+  `accion` varchar(80) NOT NULL,
+  `entidad` varchar(50) NOT NULL,
+  `id_entidad` int(11) DEFAULT NULL,
+  `detalle` varchar(1000) NOT NULL,
   `fecha_registro` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -269,6 +320,22 @@ ALTER TABLE `prestamos`
   ADD KEY `idx_prestamos_estado` (`estado_prestamo`),
   ADD KEY `idx_prestamos_fecha_devolucion` (`fecha_devolucion_real`);
 
+ALTER TABLE `autorizaciones_vencido`
+  ADD PRIMARY KEY (`id_autorizacion`),
+  ADD KEY `idx_auth_usuario_activa` (`id_usuario`, `activa`),
+  ADD KEY `FK_AUTH_AUTORIZADO_POR` (`autorizado_por`);
+
+ALTER TABLE `alertas`
+  ADD PRIMARY KEY (`id_alerta`),
+  ADD KEY `idx_alertas_destino_estado` (`id_usuario_destino`, `resuelta`, `leida`),
+  ADD KEY `idx_alertas_prestamo_tipo` (`id_prestamo`, `tipo_alerta`, `resuelta`);
+
+ALTER TABLE `bitacora`
+  ADD PRIMARY KEY (`id_bitacora`),
+  ADD KEY `idx_bitacora_fecha` (`fecha_registro`),
+  ADD KEY `idx_bitacora_modulo` (`modulo`),
+  ADD KEY `idx_bitacora_usuario` (`id_usuario`);
+
 -- ============================================================
 -- AUTO_INCREMENT
 -- ============================================================
@@ -293,6 +360,15 @@ ALTER TABLE `solicitudes_prestamo`
 
 ALTER TABLE `prestamos`
   MODIFY `id_prestamo` int(11) NOT NULL AUTO_INCREMENT;
+
+ALTER TABLE `autorizaciones_vencido`
+  MODIFY `id_autorizacion` int(11) NOT NULL AUTO_INCREMENT;
+
+ALTER TABLE `alertas`
+  MODIFY `id_alerta` int(11) NOT NULL AUTO_INCREMENT;
+
+ALTER TABLE `bitacora`
+  MODIFY `id_bitacora` int(11) NOT NULL AUTO_INCREMENT;
 
 -- ============================================================
 -- CLAVES FORÁNEAS
@@ -374,6 +450,37 @@ ALTER TABLE `prestamos`
   REFERENCES `usuarios` (`id_usuario`)
   ON UPDATE CASCADE
   ON DELETE RESTRICT;
+
+ALTER TABLE `autorizaciones_vencido`
+  ADD CONSTRAINT `FK_AUTH_USUARIO`
+  FOREIGN KEY (`id_usuario`)
+  REFERENCES `usuarios` (`id_usuario`)
+  ON UPDATE CASCADE
+  ON DELETE RESTRICT,
+  ADD CONSTRAINT `FK_AUTH_AUTORIZADO_POR`
+  FOREIGN KEY (`autorizado_por`)
+  REFERENCES `usuarios` (`id_usuario`)
+  ON UPDATE CASCADE
+  ON DELETE RESTRICT;
+
+ALTER TABLE `alertas`
+  ADD CONSTRAINT `FK_ALERTA_PRESTAMO`
+  FOREIGN KEY (`id_prestamo`)
+  REFERENCES `prestamos` (`id_prestamo`)
+  ON UPDATE CASCADE
+  ON DELETE RESTRICT,
+  ADD CONSTRAINT `FK_ALERTA_USUARIO`
+  FOREIGN KEY (`id_usuario_destino`)
+  REFERENCES `usuarios` (`id_usuario`)
+  ON UPDATE CASCADE
+  ON DELETE RESTRICT;
+
+ALTER TABLE `bitacora`
+  ADD CONSTRAINT `FK_BITACORA_USUARIO`
+  FOREIGN KEY (`id_usuario`)
+  REFERENCES `usuarios` (`id_usuario`)
+  ON UPDATE CASCADE
+  ON DELETE SET NULL;
 
 -- ============================================================
 -- FINALIZACIÓN

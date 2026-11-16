@@ -3,6 +3,7 @@ require_once __DIR__ . '/../includes/verificar_rol.php';
 verificarPermiso('inventario.registrar');
 require_once __DIR__ . '/../includes/csrf.php';
 require_once __DIR__ . '/../config/conexion.php';
+require_once __DIR__ . '/../includes/bitacora.php';
 
 $nombreSesion = $_SESSION['nombres'] ?? '';
 $apellidoSesion = $_SESSION['apellidos'] ?? '';
@@ -55,7 +56,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt = $conexion->prepare('INSERT INTO equipos (id_tipo, id_estado, codigo_inventario, nombre, marca, modelo, numero_serie, descripcion, ubicacion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
                 $stmt->bind_param('iisssssss', $idTipo, $idEstadoDisponible, $datos['codigo_inventario'], $datos['nombre'], $marca, $modelo, $serie, $descripcion, $ubicacion);
                 $stmt->execute();
+                $idEquipoNuevo = (int)$conexion->insert_id;
                 $stmt->close();
+                registrarBitacora(
+                    $conexion,
+                    (int)($_SESSION['id_usuario'] ?? 0) ?: null,
+                    'Inventario',
+                    'Registro de equipo',
+                    'equipos',
+                    $idEquipoNuevo,
+                    "Se registró el equipo {$datos['codigo_inventario']} ({$datos['nombre']}) en estado Disponible."
+                );
                 header('Location: listar.php?registrado=1');
                 exit();
             }
@@ -64,11 +75,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 $tokenCSRF = obtenerTokenCSRF();
 ?>
-<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Registrar equipo | SIGPET</title><link rel="stylesheet" href="../CSS/base.css"><link rel="stylesheet" href="../CSS/dashboard.css"><link rel="stylesheet" href="../CSS/inventario.css"></head>
+<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Registrar equipo | SIGPET</title>
+    <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg"><link rel="stylesheet" href="../CSS/base.css"><link rel="stylesheet" href="../CSS/dashboard.css"><link rel="stylesheet" href="../CSS/usuarios.css"><link rel="stylesheet" href="../CSS/inventario.css"></head>
 <body class="dashboard-body"><div class="dashboard-layout">
 <?php $rutaBase = '../'; $paginaActiva = 'inventario'; require __DIR__ . '/../includes/sidebar.php'; ?>
-<main class="dashboard-main"><header class="dashboard-header"><div><span class="header-subtitle">CONTROL DE EQUIPOS TECNOLÓGICOS</span><h1>Registrar equipo</h1></div><div class="header-user"><div class="header-user-text"><strong><?= htmlspecialchars($nombreSesion . ' ' . $apellidoSesion) ?></strong><span><?= htmlspecialchars($rolSesion) ?></span></div><div class="user-avatar header-avatar"><?= htmlspecialchars(strtoupper(substr($nombreSesion, 0, 1))) ?></div></div></header>
-<section class="users-intro"><h2>Nuevo equipo</h2><p>Registra un equipo tecnológico en el inventario institucional.</p></section>
+<main class="dashboard-main"><header class="dashboard-header"><div><span class="header-subtitle">CONTROL DE EQUIPOS TECNOLÓGICOS</span><h1>Registrar equipo</h1><p class="header-desc">Incorpora un nuevo equipo tecnológico al inventario institucional.</p></div></header>
 <section class="user-form-container"><?php if ($error !== ''): ?><div class="form-message error"><?= htmlspecialchars($error) ?></div><?php endif; ?>
 <form method="POST" action="registrar.php" class="user-form"><input type="hidden" name="token_csrf" value="<?= htmlspecialchars($tokenCSRF) ?>">
 <div class="form-section-title">Identificación del equipo</div><div class="form-grid">

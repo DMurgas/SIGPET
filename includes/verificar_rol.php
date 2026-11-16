@@ -16,7 +16,7 @@ function verificarPermiso(string $permiso): void
         );
 
         $enSubcarpeta = preg_match(
-            '~/(usuarios|inventario|prestamos)$~',
+            '~/(usuarios|inventario|prestamos|reportes|bitacora)$~',
             rtrim($directorio, '/')
         ) === 1;
 
@@ -34,6 +34,7 @@ function verificarPermiso(string $permiso): void
             >
 
             <title>Acceso denegado | SIGPET</title>
+            <link rel='icon' type='image/svg+xml' href='{}assets/favicon.svg'>
 
             <link
                 rel='stylesheet'

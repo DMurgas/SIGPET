@@ -3,6 +3,7 @@ require_once __DIR__ . '/../includes/verificar_rol.php';
 verificarPermiso('prestamos.gestionar');
 require_once __DIR__ . '/../includes/csrf.php';
 require_once __DIR__ . '/../config/conexion.php';
+require_once __DIR__ . '/../includes/bitacora.php';
 
 $nombreSesion = $_SESSION['nombres'] ?? '';
 $apellidoSesion = $_SESSION['apellidos'] ?? '';
@@ -56,6 +57,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $actualizada = $stmt->affected_rows === 1;
             $stmt->close();
             if ($actualizada) {
+                registrarBitacora(
+                    $conexion,
+                    $idDecisor,
+                    'Préstamos',
+                    'Rechazo de solicitud',
+                    'solicitudes_prestamo',
+                    (int)$idSolicitud,
+                    "Se rechazó la solicitud #{$idSolicitud} ({$solicitud['codigo_inventario']} — {$solicitud['nombre_equipo']}). Motivo: {$motivo}"
+                );
                 header('Location: listar.php?estado=Pendiente&rechazada=1');
                 exit();
             }
@@ -71,14 +81,14 @@ $tokenCSRF = obtenerTokenCSRF();
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rechazar solicitud | SIGPET</title>
+    <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
     <link rel="stylesheet" href="../CSS/base.css"><link rel="stylesheet" href="../CSS/dashboard.css"><link rel="stylesheet" href="../CSS/usuarios.css"><link rel="stylesheet" href="../CSS/prestamos.css">
 </head>
 <body class="dashboard-body">
 <div class="dashboard-layout">
 <?php $rutaBase = '../'; $paginaActiva = 'prestamos'; require __DIR__ . '/../includes/sidebar.php'; ?>
 <main class="dashboard-main">
-<header class="dashboard-header"><div><span class="header-subtitle">GESTIÓN DE PRÉSTAMOS</span><h1>Rechazar solicitud</h1></div><div class="header-user"><div class="header-user-text"><strong><?= htmlspecialchars($nombreSesion . ' ' . $apellidoSesion) ?></strong><span><?= htmlspecialchars($rolSesion) ?></span></div><div class="user-avatar header-avatar"><?= htmlspecialchars(strtoupper(substr($nombreSesion, 0, 1))) ?></div></div></header>
-<section class="users-intro"><h2>Solicitud #<?= (int)$solicitud['id_solicitud'] ?></h2><p>Registra el motivo por el cual no se autoriza el préstamo.</p></section>
+<header class="dashboard-header"><div><span class="header-subtitle">GESTIÓN DE PRÉSTAMOS</span><h1>Rechazar solicitud #<?= (int)$solicitud['id_solicitud'] ?></h1><p class="header-desc">Registra el motivo por el cual no se autoriza el préstamo.</p></div></header>
 <section class="user-form-container">
 <?php if ($error !== ''): ?><div class="form-message error"><?= htmlspecialchars($error) ?></div><?php endif; ?>
 <div class="loan-detail-card"><strong>Solicitante:</strong> <?= htmlspecialchars($solicitud['nombres'] . ' ' . $solicitud['apellidos']) ?><br><strong>Equipo:</strong> <?= htmlspecialchars($solicitud['codigo_inventario'] . ' — ' . $solicitud['nombre_equipo']) ?><br><strong>Período:</strong> <?= htmlspecialchars($solicitud['fecha_inicio']) ?> al <?= htmlspecialchars($solicitud['fecha_devolucion_prevista']) ?><br><strong>Propósito:</strong> <?= htmlspecialchars($solicitud['proposito']) ?></div>

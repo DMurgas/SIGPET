@@ -1,9 +1,9 @@
-
 <?php
 
 session_start();
 
 require_once "config/conexion.php";
+require_once "includes/bitacora.php";
 
 // Comprobar que el formulario fue enviado
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
@@ -64,6 +64,16 @@ if ($resultado->num_rows === 1) {
         $_SESSION["correo"] = $usuario["correo_institucional"];
         $_SESSION["id_rol"] = $usuario["id_rol"];
         $_SESSION["rol"] = $usuario["nombre_rol"];
+
+        registrarBitacora(
+            $conexion,
+            (int)$usuario["id_usuario"],
+            'Autenticación',
+            'Inicio de sesión',
+            'usuarios',
+            (int)$usuario["id_usuario"],
+            "Inicio de sesión exitoso de {$usuario['correo_institucional']} ({$usuario['nombre_rol']})."
+        );
 
         // Redirigir al panel principal
         header("Location: dashboard.php");

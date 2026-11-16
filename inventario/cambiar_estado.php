@@ -5,6 +5,7 @@ verificarPermiso('inventario.dar_baja');
 
 require_once __DIR__ . '/../includes/csrf.php';
 require_once __DIR__ . '/../config/conexion.php';
+require_once __DIR__ . '/../includes/bitacora.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !validarTokenCSRF()) {
     http_response_code(400);
@@ -159,6 +160,17 @@ $stmt->bind_param('ii', $idEstadoDestino, $idEquipo);
 $stmt->execute();
 
 $stmt->close();
+
+$idUsuarioActor = (int)($_SESSION['id_usuario'] ?? 0);
+registrarBitacora(
+    $conexion,
+    $idUsuarioActor > 0 ? $idUsuarioActor : null,
+    'Inventario',
+    'Cambio de estado de equipo',
+    'equipos',
+    (int)$idEquipo,
+    "Equipo #{$idEquipo} cambió al estado '{$nombreEstadoDestino}' mediante acción '{$accion}'."
+);
 
 /*
 |--------------------------------------------------------------------------

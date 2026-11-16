@@ -132,6 +132,7 @@ $tokenCSRF = obtenerTokenCSRF();
     >
 
     <title>Registrar entrega | SIGPET</title>
+    <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
 
     <link
         rel="stylesheet"
@@ -179,50 +180,13 @@ $tokenCSRF = obtenerTokenCSRF();
                     Registrar entrega
                 </h1>
 
-            </div>
-
-            <div class="header-user">
-
-                <div class="header-user-text">
-
-                    <strong>
-                        <?= htmlspecialchars(
-                            $nombreSesion . ' ' . $apellidoSesion
-                        ) ?>
-                    </strong>
-
-                    <span>
-                        <?= htmlspecialchars(
-                            $_SESSION['rol'] ?? ''
-                        ) ?>
-                    </span>
-
-                </div>
-
-                <div class="user-avatar header-avatar">
-                    <?= htmlspecialchars(
-                        strtoupper(
-                            substr($nombreSesion, 0, 1)
-                        )
-                    ) ?>
-                </div>
+                <p class="header-desc">
+                    Registra la entrega física del equipo correspondiente a la solicitud aprobada.
+                </p>
 
             </div>
 
         </header>
-
-        <section class="users-intro">
-
-            <h2>
-                Entrega del equipo
-            </h2>
-
-            <p>
-                Registra la entrega física del equipo correspondiente
-                a la solicitud aprobada.
-            </p>
-
-        </section>
 
         <section class="inventory-container">
 
@@ -405,17 +369,17 @@ $tokenCSRF = obtenerTokenCSRF();
 
                     </div>
 
-                    <div class="action-buttons">
+                    <div class="form-actions">
 
                         <a
-                            class="action-button"
+                            class="form-button cancel-button"
                             href="listar.php?estado=Aprobada"
                         >
                             Cancelar
                         </a>
 
                         <button
-                            class="action-button approve-action"
+                            class="form-button submit-button"
                             type="submit"
                             onclick="return confirm('¿Confirmas que deseas registrar la entrega de este equipo?');"
                         >

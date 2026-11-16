@@ -14,7 +14,8 @@ $estadoFiltro = $_GET['estado'] ?? 'Pendiente';
 $estadosPermitidos = [
     'Pendiente',
     'Aprobada',
-    'Rechazada'
+    'Rechazada',
+    'Cancelada'
 ];
 
 if (!in_array($estadoFiltro, $estadosPermitidos, true)) {
@@ -27,6 +28,7 @@ $stmt = $conexion->prepare(
         s.fecha_inicio,
         s.fecha_devolucion_prevista,
         s.proposito,
+        s.es_prioridad,
         s.estado_solicitud,
         s.motivo_rechazo,
         s.fecha_solicitud,
@@ -36,6 +38,7 @@ $stmt = $conexion->prepare(
         u.apellidos,
         u.correo_institucional,
         u.codigo_institucional,
+        r.nombre_rol,
 
         e.id_equipo,
         e.codigo_inventario,
@@ -55,6 +58,9 @@ $stmt = $conexion->prepare(
      INNER JOIN usuarios u
         ON u.id_usuario = s.id_usuario
 
+     INNER JOIN roles r
+        ON r.id_rol = u.id_rol
+
      INNER JOIN equipos e
         ON e.id_equipo = s.id_equipo
 
@@ -69,7 +75,7 @@ $stmt = $conexion->prepare(
 
      WHERE s.estado_solicitud = ?
 
-     ORDER BY s.id_solicitud DESC"
+     ORDER BY s.es_prioridad DESC, s.id_solicitud DESC"
 );
 
 $stmt->bind_param('s', $estadoFiltro);
@@ -83,8 +89,8 @@ $mensajeExito = '';
 $mensajeError = '';
 
 if (
-    isset($_GET['entregada']) &&
-    $_GET['entregada'] === '1'
+    (isset($_GET['entregada']) && $_GET['entregada'] === '1') ||
+    (isset($_GET['ok']) && $_GET['ok'] === 'entrega')
 ) {
     $mensajeExito = 'La entrega se registró correctamente.';
 }
@@ -126,6 +132,10 @@ switch ($_GET['error'] ?? '') {
 
     case 'equipo':
         $mensajeError = 'El equipo no se encuentra en el estado requerido.';
+        break;
+
+    case 'solapada':
+        $mensajeError = 'No se puede aprobar la solicitud porque existe un conflicto de fechas con otra reserva o préstamo activo.';
         break;
 
     case 'ya_entregado':
@@ -181,6 +191,7 @@ switch ($_GET['error'] ?? '') {
     >
 
     <title>Gestionar solicitudes | SIGPET</title>
+    <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
 
     <link
         rel="stylesheet"
@@ -231,58 +242,13 @@ switch ($_GET['error'] ?? '') {
                     Solicitudes de préstamo
                 </h1>
 
-            </div>
-
-
-            <div class="header-user">
-
-                <div class="header-user-text">
-
-                    <strong>
-
-                        <?= htmlspecialchars(
-                            $nombreSesion . ' ' . $apellidoSesion
-                        ) ?>
-
-                    </strong>
-
-                    <span>
-
-                        <?= htmlspecialchars(
-                            $rolSesion
-                        ) ?>
-
-                    </span>
-
-                </div>
-
-
-                <div class="user-avatar header-avatar">
-
-                    <?= htmlspecialchars(
-                        strtoupper(
-                            substr($nombreSesion, 0, 1)
-                        )
-                    ) ?>
-
-                </div>
+                <p class="header-desc">
+                    Consulta las solicitudes recibidas, aprueba o rechaza peticiones y registra entregas o devoluciones.
+                </p>
 
             </div>
 
         </header>
-
-
-        <section class="users-intro">
-
-            <h2>
-                Gestión de solicitudes
-            </h2>
-
-            <p>
-                Consulta las solicitudes y registra la decisión correspondiente.
-            </p>
-
-        </section>
 
 
         <?php if ($mensajeExito !== ''): ?>
@@ -314,37 +280,22 @@ switch ($_GET['error'] ?? '') {
         <section class="inventory-container">
 
 
-            <div class="inventory-toolbar">
-
-                <div>
-
-                    <h3>
-                        Solicitudes
-                    </h3>
-
-                    <p>
-                        Selecciona el estado que deseas consultar.
-                    </p>
-
-                </div>
-
-            </div>
-
-
             <form
                 method="GET"
                 class="loan-filter"
             >
 
-                <label for="estado">
-                    Estado
-                </label>
+                <div>
+
+                    <label for="estado">
+                        Filtrar por estado
+                    </label>
 
 
-                <select
-                    id="estado"
-                    name="estado"
-                >
+                    <select
+                        id="estado"
+                        name="estado"
+                    >
 
                     <option
                         value="Pendiente"
@@ -375,15 +326,27 @@ switch ($_GET['error'] ?? '') {
                         Rechazada
                     </option>
 
+                    <option
+                        value="Cancelada"
+                        <?= $estadoFiltro === 'Cancelada'
+                            ? 'selected'
+                            : '' ?>
+                    >
+                        Cancelada
+                    </option>
+
                 </select>
 
+                </div>
 
-                <button
-                    class="filter-button"
-                    type="submit"
-                >
-                    Consultar
-                </button>
+                <div class="action-buttons">
+                    <button
+                        class="filter-button"
+                        type="submit"
+                    >
+                        Consultar
+                    </button>
+                </div>
 
             </form>
 
@@ -438,42 +401,113 @@ switch ($_GET['error'] ?? '') {
                             $solicitud =
                             $solicitudes->fetch_assoc()
                         ): ?>
+                            <?php
+                            $estadoSol = (string) $solicitud['estado_solicitud'];
+                            $toneSol = $estadoSol === 'Aprobada' ? 'success'
+                                : ($estadoSol === 'Rechazada' ? 'danger'
+                                : ($estadoSol === 'Cancelada' ? 'neutral' : 'pendiente'));
+                            $seccionesSol = [
+                                [
+                                    'label' => 'Propósito de uso',
+                                    'text'  => (string) ($solicitud['proposito'] ?? ''),
+                                ],
+                            ];
+                            if (!empty($solicitud['motivo_rechazo'])) {
+                                $seccionesSol[] = [
+                                    'label' => 'Motivo de rechazo',
+                                    'text'  => (string) $solicitud['motivo_rechazo'],
+                                    'tone'  => 'danger',
+                                ];
+                            }
+                            $metaSol = [
+                                [
+                                    'label' => 'Solicitante',
+                                    'value' => trim($solicitud['nombres'] . ' ' . $solicitud['apellidos'] . (!empty($solicitud['codigo_institucional']) ? ' (' . $solicitud['codigo_institucional'] . ')' : '')),
+                                ],
+                                [
+                                    'label' => 'Rol y correo',
+                                    'value' => trim(($solicitud['nombre_rol'] ?? '') . (!empty($solicitud['correo_institucional']) ? ' · ' . $solicitud['correo_institucional'] : '')),
+                                ],
+                                [
+                                    'label' => 'Fecha de inicio',
+                                    'value' => $solicitud['fecha_inicio'],
+                                ],
+                                [
+                                    'label' => 'Devolución prevista',
+                                    'value' => $solicitud['fecha_devolucion_prevista'],
+                                ],
+                                [
+                                    'label' => 'Fecha de solicitud',
+                                    'value' => date('d/m/Y H:i', strtotime($solicitud['fecha_solicitud'])),
+                                ],
+                                [
+                                    'label' => 'Prioridad académica',
+                                    'value' => ((int) ($solicitud['es_prioridad'] ?? 0) === 1) ? 'Prioridad docente' : 'Estándar',
+                                ],
+                            ];
+                            if (!empty($solicitud['fecha_decision'])) {
+                                $metaSol[] = [
+                                    'label' => 'Fecha de decisión',
+                                    'value' => date('d/m/Y H:i', strtotime($solicitud['fecha_decision'])),
+                                ];
+                            }
+                            if (!empty($solicitud['id_prestamo'])) {
+                                $metaSol[] = [
+                                    'label' => 'Préstamo asociado',
+                                    'value' => '#' . (int) $solicitud['id_prestamo'] . ' (' . ($solicitud['estado_prestamo'] ?? '') . ')',
+                                ];
+                            }
+                            $payloadSol = [
+                                'eyebrow'  => 'Solicitud #' . (int) $solicitud['id_solicitud'],
+                                'title'    => $solicitud['codigo_inventario'] . ' — ' . $solicitud['nombre_equipo'],
+                                'subtitle' => trim($solicitud['nombre_tipo'] . (!empty($solicitud['marca']) ? ' · ' . $solicitud['marca'] : '') . (!empty($solicitud['modelo']) ? ' ' . $solicitud['modelo'] : '')),
+                                'badge'    => [
+                                    'label' => $estadoSol,
+                                    'tone'  => $toneSol,
+                                ],
+                                'meta'     => $metaSol,
+                                'sections' => $seccionesSol,
+                            ];
+                            $detalleSolJson = htmlspecialchars(
+                                json_encode($payloadSol, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP),
+                                ENT_QUOTES,
+                                'UTF-8'
+                            );
+                            ?>
 
-
-                            <tr>
+                            <tr class="sigpet-row-clickable" data-detail="<?= $detalleSolJson ?>">
 
 
                                 <td>
 
-                                    <strong>
-
-                                        #<?= (int)
-                                            $solicitud['id_solicitud']
-                                        ?>
-
-                                    </strong>
+                                    <span class="sigpet-equip-tag">
+                                        #<?= (int)$solicitud['id_solicitud'] ?>
+                                    </span>
 
                                 </td>
 
 
                                 <td>
 
-                                    <?= htmlspecialchars(
-                                        $solicitud['nombres'] .
-                                        ' ' .
-                                        $solicitud['apellidos']
-                                    ) ?>
-
+                                    <strong>
+                                        <?= htmlspecialchars(
+                                            $solicitud['nombres'] .
+                                            ' ' .
+                                            $solicitud['apellidos']
+                                        ) ?>
+                                    </strong>
 
                                     <small class="table-subtext">
 
                                         <?= htmlspecialchars(
-                                            $solicitud[
-                                                'codigo_institucional'
-                                            ] ?? ''
+                                            trim(($solicitud['nombre_rol'] ?? '') . ' · ' . ($solicitud['codigo_institucional'] ?? ''))
                                         ) ?>
 
                                     </small>
+
+                                    <?php if ((int)($solicitud['es_prioridad'] ?? 0) === 1): ?>
+                                        <span class="loan-status status-prioridad">Prioridad docente</span>
+                                    <?php endif; ?>
 
                                 </td>
 
@@ -562,13 +596,7 @@ switch ($_GET['error'] ?? '') {
 
 
                                 <td>
-
-                                    <?= htmlspecialchars(
-                                        $solicitud[
-                                            'proposito'
-                                        ]
-                                    ) ?>
-
+                                    <span class="sigpet-cell-clamp"><?= htmlspecialchars($solicitud['proposito']) ?></span>
                                 </td>
 
 
@@ -598,166 +626,51 @@ switch ($_GET['error'] ?? '') {
 
 
                                 <td>
+                                    <div class="action-buttons">
+                                        <button type="button" class="sigpet-detail-btn sigpet-detail-trigger" aria-label="Ver detalle de la solicitud #<?= (int)$solicitud['id_solicitud'] ?>">
+                                            <?= sigpetIcono('eye', 15) ?>
+                                            <span>Ver detalle</span>
+                                        </button>
 
+                                    <?php if ($estadoFiltro === 'Pendiente'): ?>
 
-                                    <?php if (
-                                        $estadoFiltro === 'Pendiente'
-                                    ): ?>
+                                        <form method="POST" action="aprobar.php">
+                                            <input type="hidden" name="token_csrf" value="<?= htmlspecialchars($tokenCSRF) ?>">
+                                            <input type="hidden" name="id_solicitud" value="<?= (int)$solicitud['id_solicitud'] ?>">
+                                            <button class="action-button approve-action" type="submit" onclick="return confirm('¿Deseas aprobar esta solicitud? El equipo pasará a estado Reservado.');">
+                                                Aprobar
+                                            </button>
+                                        </form>
 
+                                        <a class="action-button reject-action" href="rechazar.php?id=<?= (int)$solicitud['id_solicitud'] ?>">
+                                            Rechazar
+                                        </a>
 
-                                        <div class="action-buttons">
+                                    <?php elseif ($estadoFiltro === 'Aprobada'): ?>
 
-
-                                            <form
-                                                method="POST"
-                                                action="aprobar.php"
-                                            >
-
-
-                                                <input
-                                                    type="hidden"
-                                                    name="token_csrf"
-                                                    value="<?= htmlspecialchars(
-                                                        $tokenCSRF
-                                                    ) ?>"
-                                                >
-
-
-                                                <input
-                                                    type="hidden"
-                                                    name="id_solicitud"
-                                                    value="<?= (int)
-                                                        $solicitud[
-                                                            'id_solicitud'
-                                                        ] ?>"
-                                                >
-
-
-                                                <button
-                                                    class="action-button approve-action"
-                                                    type="submit"
-                                                    onclick="return confirm('¿Deseas aprobar esta solicitud? El equipo pasará a estado Reservado.');"
-                                                >
-                                                    Aprobar
-                                                </button>
-
-
-                                            </form>
-
-
-                                            <a
-                                                class="action-button reject-action"
-                                                href="rechazar.php?id=<?= (int)
-                                                    $solicitud[
-                                                        'id_solicitud'
-                                                    ] ?>"
-                                            >
-                                                Rechazar
-                                            </a>
-
-
-                                        </div>
-
-
-                                    <?php elseif (
-                                        $estadoFiltro === 'Aprobada'
-                                    ): ?>
-
-
-                                        <?php if (
-                                            empty(
-                                                $solicitud[
-                                                    'id_prestamo'
-                                                ]
-                                            )
-                                        ): ?>
-
-
-                                            <a
-                                                class="action-button approve-action"
-                                                href="entregar.php?id=<?= (int)
-                                                    $solicitud[
-                                                        'id_solicitud'
-                                                    ] ?>"
-                                            >
+                                        <?php if (empty($solicitud['id_prestamo'])): ?>
+                                            <a class="action-button approve-action" href="entregar.php?id=<?= (int)$solicitud['id_solicitud'] ?>">
                                                 Registrar entrega
                                             </a>
-
-
-                                        <?php elseif (
-                                            $solicitud[
-                                                'estado_prestamo'
-                                            ] === 'Prestado'
-                                            &&
-                                            empty(
-                                                $solicitud[
-                                                    'fecha_devolucion_real'
-                                                ]
-                                            )
-                                        ): ?>
-
-
-                                            <a
-                                                class="action-button approve-action"
-                                                href="devolver.php?id=<?= (int)
-                                                    $solicitud[
-                                                        'id_prestamo'
-                                                    ] ?>"
-                                            >
+                                        <?php elseif ($solicitud['estado_prestamo'] === 'Prestado' && empty($solicitud['fecha_devolucion_real'])): ?>
+                                            <a class="action-button approve-action" href="devolver.php?id=<?= (int)$solicitud['id_prestamo'] ?>">
                                                 Registrar devolución
                                             </a>
-
-
-                                        <?php elseif (
-                                            $solicitud[
-                                                'estado_prestamo'
-                                            ] === 'Devuelto'
-                                            ||
-                                            !empty(
-                                                $solicitud[
-                                                    'fecha_devolucion_real'
-                                                ]
-                                            )
-                                        ): ?>
-
-
-                                            <span class="table-subtext">
-                                                Devolución registrada
-                                            </span>
-
-
+                                        <?php elseif ($solicitud['estado_prestamo'] === 'Devuelto' || !empty($solicitud['fecha_devolucion_real'])): ?>
+                                            <span class="table-subtext">Devolución registrada</span>
                                         <?php else: ?>
-
-
-                                            <span class="table-subtext">
-                                                Préstamo registrado
-                                            </span>
-
-
+                                            <span class="table-subtext">Préstamo registrado</span>
                                         <?php endif; ?>
 
+                                    <?php elseif ($estadoFiltro === 'Rechazada'): ?>
+                                        <span class="table-subtext">Rechazada (ver detalle)</span>
 
-                                    <?php elseif (
-                                        $estadoFiltro === 'Rechazada'
-                                    ): ?>
-
-
-                                        <span class="table-subtext">
-
-                                            Motivo:
-
-                                            <?= htmlspecialchars(
-                                                $solicitud[
-                                                    'motivo_rechazo'
-                                                ] ?? ''
-                                            ) ?>
-
-                                        </span>
-
+                                    <?php elseif ($estadoFiltro === 'Cancelada'): ?>
+                                        <span class="table-subtext">Cancelada</span>
 
                                     <?php endif; ?>
 
-
+                                    </div>
                                 </td>
 
 

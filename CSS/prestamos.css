@@ -1,12 +1,566 @@
-.loan-status { display:inline-flex; align-items:center; padding:5px 8px; border-radius:999px; font-size:11px; font-weight:bold; white-space:nowrap; }
-.loan-status.status-pendiente { background:#fff4d6; color:#8a5a00; }
-.loan-status.status-aprobada { background:#e4f6ea; color:#1f6b3b; }
-.loan-status.status-rechazada { background:#fde8e8; color:#a52a2a; }
-.approve-action { background:#2f7d4a; color:#fff; }
-.approve-action:hover { background:#245f38; }
-.reject-action { background:#a52a2a; color:#fff; }
-.reject-action:hover { background:#842121; }
-.loan-filter { display:flex; align-items:end; gap:10px; padding:16px; margin-bottom:18px; background:#f8fafc; border:1px solid #e5ebf0; border-radius:8px; }
-.loan-filter label { display:block; font-size:12px; font-weight:bold; color:#294763; }
-.loan-filter select { min-height:39px; padding:8px 10px; border:1px solid #cbd5df; border-radius:6px; background:#fff; color:#294763; }
-.loan-detail-card { margin-bottom:20px; padding:16px; border:1px solid #e5ebf0; border-radius:8px; background:#f8fafc; color:#294763; line-height:1.8; font-size:13px; }
+/* Estilos de préstamos, reservas, alertas, reportes y bitácora SIGPET */
+
+.loan-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.loan-status::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.loan-status.status-pendiente { background: #fffbeb; border: 1px solid #fde68a; color: #b45309; }
+.loan-status.status-aprobada,
+.loan-status.status-disponible,
+.loan-status.status-devuelto { background: #ecfdf5; border: 1px solid #a7f3d0; color: #047857; }
+.loan-status.status-rechazada,
+.loan-status.status-atrasado,
+.loan-status.status-ocupado { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; }
+.loan-status.status-prestado { background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; }
+.loan-status.status-reservado { background: #f5f3ff; border: 1px solid #ddd6fe; color: #6d28d9; }
+.loan-status.status-cancelada { background: #f4f4f5; border: 1px solid #d4d4d8; color: #52525b; }
+.loan-status.status-proximo { background: #fff7ed; border: 1px solid #fed7aa; color: #c2410c; }
+.loan-status.status-prioridad {
+    background: #fff7ed;
+    border: 1px solid #fdba74;
+    color: #c2410c;
+    margin-top: 4px;
+}
+
+.approve-action {
+    color: #047857;
+    background: #ecfdf5;
+    border-color: #a7f3d0;
+}
+.approve-action:hover {
+    background: #059669;
+    border-color: #059669;
+    color: #ffffff;
+}
+
+.reject-action {
+    color: #b91c1c;
+    background: #fef2f2;
+    border-color: #fecaca;
+}
+.reject-action:hover {
+    background: #dc2626;
+    border-color: #dc2626;
+    color: #ffffff;
+}
+
+/* Barra de filtros alineada */
+
+.loan-filter {
+    display: flex;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    background: #f8fafc;
+    border: 1px solid #e8eef5;
+    border-radius: 10px;
+}
+
+.loan-filter > div:not(.action-buttons) {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    flex: 1 1 170px;
+    min-width: 150px;
+}
+
+.loan-filter label {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #27272a;
+}
+
+.loan-filter select,
+.loan-filter input[type="date"],
+.loan-filter input[type="text"] {
+    width: 100%;
+    height: 40px;
+    padding: 7px 11px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #0f2942;
+    font-family: inherit;
+    font-size: 13.8px;
+}
+
+.loan-filter select:focus,
+.loan-filter input[type="date"]:focus,
+.loan-filter input[type="text"]:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+}
+
+.loan-filter > .action-buttons {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto;
+    height: 40px;
+}
+
+.loan-filter > .action-buttons .action-button,
+.loan-filter > .action-buttons .filter-button {
+    height: 40px;
+    min-height: 40px;
+    padding: 0 16px;
+    font-size: 13.5px;
+}
+
+.loan-detail-card {
+    margin-bottom: 18px;
+    padding: 16px 18px;
+    border: 1px solid #dbe4ef;
+    border-radius: 10px;
+    background: #f8fafc;
+    color: #18181b;
+    line-height: 1.6;
+    font-size: 14px;
+}
+
+/* Ficha + formulario en entregar.php y devolver.php */
+
+.loan-form-container {
+    display: grid;
+    grid-template-columns: minmax(280px, 1fr) minmax(340px, 1.3fr);
+    gap: 22px;
+    align-items: start;
+}
+
+.loan-summary {
+    padding: 18px 20px;
+    border: 1px solid #dbe4ef;
+    border-radius: 11px;
+    background: #f8fafc;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.loan-summary p {
+    margin: 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e8eef5;
+    font-size: 13.8px;
+    color: #3f3f46;
+    line-height: 1.45;
+}
+
+.loan-summary p:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+}
+
+.loan-summary strong {
+    color: #0f2942;
+    margin-right: 6px;
+}
+
+.loan-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px;
+    border: 1px solid #dbe4ef;
+    border-radius: 11px;
+    background: #ffffff;
+}
+
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+    gap: 12px;
+    margin: 14px 0;
+}
+
+.kpi-card {
+    background: #ffffff;
+    border: 1px solid #dbe4ef;
+    border-radius: 12px;
+    padding: 14px 18px;
+    box-shadow: 0 2px 8px rgba(15, 41, 66, 0.03);
+}
+
+.kpi-card span {
+    display: block;
+    color: #71717a;
+    font-size: 12.5px;
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.kpi-card strong {
+    display: block;
+    color: #0f2942;
+    font-size: 24px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.kpi-card.kpi-danger strong { color: #dc2626; }
+.kpi-card.kpi-warning strong { color: #d97706; }
+.kpi-card.kpi-success strong { color: #059669; }
+
+/* Identidad visual SIGPET para notificaciones y control de plazos (ALTA PRESENCIA) */
+
+.sigpet-notice-strip {
+    margin: 14px 0 4px;
+    padding: 14px 20px;
+    border-radius: 12px;
+    background: #0f2942;
+    color: #f4f4f5;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    border: 1.5px solid #d97706;
+    box-shadow: 0 8px 22px rgba(217, 119, 6, 0.16);
+}
+
+.sigpet-notice-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.sigpet-notice-dot {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: #d97706;
+    box-shadow: 0 0 0 5px rgba(217, 119, 6, 0.28);
+    flex-shrink: 0;
+}
+
+.sigpet-notice-text {
+    font-size: 14px;
+    line-height: 1.4;
+    color: #e4e4e7;
+}
+
+.sigpet-notice-text strong {
+    color: #ffffff;
+}
+
+.sigpet-notice-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    background: #d97706;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background 0.15s ease;
+}
+
+.sigpet-notice-cta:hover {
+    background: #c2410c;
+}
+
+.sigpet-alerts-feed {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.sigpet-alert-ticket {
+    display: grid;
+    grid-template-columns: 114px 1fr auto;
+    align-items: center;
+    gap: 18px;
+    padding: 16px 20px;
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(15, 41, 66, 0.05);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sigpet-alert-ticket:hover {
+    border-color: #2563eb;
+    box-shadow: 0 8px 20px rgba(15, 41, 66, 0.08);
+}
+
+.sigpet-alert-ticket.is-read {
+    background: #f8fafc;
+    border-color: #dbe4ef;
+}
+
+.sigpet-alert-stamp {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 8px;
+    border-radius: 10px;
+    text-align: center;
+    border: 1.5px dashed #cbd5e1;
+    background: #f8fafc;
+}
+
+.sigpet-alert-stamp.stamp-overdue {
+    background: #dc2626;
+    border-color: #991b1b;
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
+}
+
+.sigpet-alert-stamp.stamp-overdue .sigpet-stamp-id {
+    color: #fee2e2;
+}
+
+.sigpet-alert-stamp.stamp-soon {
+    background: #d97706;
+    border-color: #9a3412;
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(217, 119, 6, 0.25);
+}
+
+.sigpet-alert-stamp.stamp-soon .sigpet-stamp-id {
+    color: #ffedd5;
+}
+
+.sigpet-stamp-value {
+    font-size: 19px;
+    font-weight: 800;
+    line-height: 1.1;
+}
+
+.sigpet-stamp-label {
+    margin-top: 2px;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+}
+
+.sigpet-stamp-id {
+    margin-top: 5px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.sigpet-alert-content {
+    min-width: 0;
+}
+
+.sigpet-alert-head {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 5px;
+}
+
+.sigpet-alert-head h4 {
+    margin: 0;
+    font-size: 15.5px;
+    font-weight: 700;
+    color: #0f2942;
+}
+
+.sigpet-equip-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: #eff4fa;
+    border: 1px solid #cbd5e1;
+    color: #0f2942;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 11.8px;
+    font-weight: 600;
+}
+
+.sigpet-read-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #e4e4e7;
+    color: #52525b;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.sigpet-alert-msg {
+    margin: 0 0 6px;
+    font-size: 13.8px;
+    color: #27272a;
+    line-height: 1.48;
+}
+
+.sigpet-alert-meta {
+    font-size: 12.5px;
+    color: #71717a;
+}
+
+.sigpet-alert-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 7px;
+}
+
+.sigpet-btn-outline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
+    padding: 5px 12px;
+    border-radius: 7px;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #27272a;
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.sigpet-btn-outline:hover {
+    border-color: #71717a;
+    background: #f4f4f5;
+}
+
+.sigpet-btn-navy {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 34px;
+    padding: 6px 13px;
+    border-radius: 7px;
+    background: #0f2942;
+    color: #ffffff;
+    font-size: 12.5px;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background 0.15s ease;
+}
+
+.sigpet-btn-navy:hover {
+    background: #2563eb;
+}
+
+.preset-links {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+.preset-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    color: #1d4ed8;
+    font-size: 12.5px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.preset-chip:hover {
+    background: #dbeafe;
+    border-color: #2563eb;
+}
+
+.checkbox-inline {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 13.8px;
+    font-weight: 500;
+    color: #0f2942;
+    cursor: pointer;
+    padding: 9px 13px;
+    background: #f8fafc;
+    border: 1px solid #dbe4ef;
+    border-radius: 8px;
+}
+
+.checkbox-inline input {
+    width: 16px !important;
+    min-height: 16px !important;
+    height: 16px;
+    accent-color: #2563eb;
+}
+
+.section-split {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 16px;
+}
+
+@media (max-width: 960px) {
+    .loan-form-container {
+        grid-template-columns: 1fr;
+    }
+    .sigpet-notice-strip {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .sigpet-alert-ticket {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    .sigpet-alert-stamp {
+        flex-direction: row;
+        justify-content: flex-start;
+        gap: 12px;
+        padding: 8px 12px;
+    }
+    .sigpet-alert-actions {
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-start;
+    }
+}
+
+@media print {
+    .sidebar-shell,
+    .no-print {
+        display: none !important;
+    }
+    .dashboard-main {
+        padding: 0 !important;
+    }
+    .inventory-container,
+    .kpi-card {
+        box-shadow: none !important;
+        break-inside: avoid;
+    }
+}

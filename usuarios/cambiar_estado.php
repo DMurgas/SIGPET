@@ -3,6 +3,7 @@ require_once __DIR__ . '/../includes/verificar_rol.php';
 verificarPermiso('usuarios.desactivar');
 require_once __DIR__ . '/../includes/csrf.php';
 require_once __DIR__ . '/../config/conexion.php';
+require_once __DIR__ . '/../includes/bitacora.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !validarTokenCSRF()) {
     http_response_code(400);
@@ -46,5 +47,14 @@ $stmt = $conexion->prepare('UPDATE usuarios SET activo = ? WHERE id_usuario = ?'
 $stmt->bind_param('ii', $activo, $idUsuario);
 $stmt->execute();
 $stmt->close();
+registrarBitacora(
+    $conexion,
+    (int)($_SESSION['id_usuario'] ?? 0) ?: null,
+    'Usuarios',
+    'Cambio de estado de usuario',
+    'usuarios',
+    (int)$idUsuario,
+    "Usuario #{$idUsuario} fue marcado como " . ($activo === 1 ? 'Activo' : 'Inactivo') . " mediante acción '{$accion}'."
+);
 header('Location: listar.php?estado=1');
 exit();

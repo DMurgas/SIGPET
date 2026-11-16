@@ -88,6 +88,21 @@ if ($prestamo['nombre_estado'] !== 'Prestado') {
 }
 
 $tokenCSRF = obtenerTokenCSRF();
+$mensajeError = '';
+switch ($_GET['error'] ?? '') {
+    case 'estado_devolucion':
+        $mensajeError = 'Debes seleccionar el resultado de la devolución.';
+        break;
+    case 'condicion':
+        $mensajeError = 'La condición física final es obligatoria y no debe superar los 500 caracteres.';
+        break;
+    case 'observaciones_dano':
+        $mensajeError = 'Cuando el equipo se devuelve con daños, es obligatorio registrar las observaciones del daño.';
+        break;
+    case 'observaciones':
+        $mensajeError = 'Las observaciones no pueden superar los 1000 caracteres.';
+        break;
+}
 ?>
 
 <!DOCTYPE html>
@@ -102,6 +117,7 @@ $tokenCSRF = obtenerTokenCSRF();
     >
 
     <title>Registrar devolución | SIGPET</title>
+    <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
 
     <link
         rel="stylesheet"
@@ -149,52 +165,19 @@ $tokenCSRF = obtenerTokenCSRF();
                     Registrar devolución
                 </h1>
 
-            </div>
-
-            <div class="header-user">
-
-                <div class="header-user-text">
-
-                    <strong>
-                        <?= htmlspecialchars(
-                            $nombreSesion . ' ' . $apellidoSesion
-                        ) ?>
-                    </strong>
-
-                    <span>
-                        <?= htmlspecialchars($rolSesion) ?>
-                    </span>
-
-                </div>
-
-                <div class="user-avatar header-avatar">
-                    <?= htmlspecialchars(
-                        strtoupper(
-                            substr($nombreSesion, 0, 1)
-                        )
-                    ) ?>
-                </div>
+                <p class="header-desc">
+                    Registra la devolución física del equipo y actualiza su condición en el inventario.
+                </p>
 
             </div>
 
         </header>
 
 
-        <section class="users-intro">
-
-            <h2>
-                Devolución del equipo
-            </h2>
-
-            <p>
-                Registra la devolución física del equipo
-                correspondiente al préstamo seleccionado.
-            </p>
-
-        </section>
-
-
         <section class="inventory-container">
+            <?php if ($mensajeError !== ''): ?>
+                <div class="error-message"><?= htmlspecialchars($mensajeError) ?></div>
+            <?php endif; ?>
 
             <div class="inventory-toolbar">
 
@@ -441,17 +424,17 @@ $tokenCSRF = obtenerTokenCSRF();
                     </div>
 
 
-                    <div class="action-buttons">
+                    <div class="form-actions">
 
                         <a
-                            class="action-button"
+                            class="form-button cancel-button"
                             href="listar.php?estado=Aprobada"
                         >
                             Cancelar
                         </a>
 
                         <button
-                            class="action-button approve-action"
+                            class="form-button submit-button"
                             type="submit"
                             onclick="return confirm('¿Confirmas que deseas registrar la devolución de este equipo?');"
                         >
