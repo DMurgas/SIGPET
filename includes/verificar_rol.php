@@ -34,13 +34,15 @@ function verificarPermiso(string $permiso): void
             >
 
             <title>Acceso denegado | SIGPET</title>
-            <link rel='icon' type='image/svg+xml' href='{}assets/favicon.svg'>
+            <link rel='icon' type='image/svg+xml' href='{$rutaBase}assets/favicon.svg'>
 
             <link
                 rel='stylesheet'
                 href='{$rutaBase}CSS/base.css'
             >
-        </head>
+            <link rel='stylesheet' href='{$rutaBase}CSS/dashboard.css'>
+            <link rel='stylesheet' href='{$rutaBase}CSS/theme-profesional.css'>
+</head>
 
         <body>
 
