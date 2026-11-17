@@ -1,0 +1,498 @@
+/*
+ * SIGPET | Tema visual profesional
+ * Ajustes exclusivamente visuales. No modifica estructura, lógica ni comportamiento.
+ */
+
+:root {
+    --sigpet-ink: #203540;
+    --sigpet-ink-deep: #172D39;
+    --sigpet-ink-soft: #2B4651;
+    --sigpet-accent: #287A76;
+    --sigpet-accent-hover: #206864;
+    --sigpet-accent-soft: #E7F1F0;
+    --sigpet-background: #F3F6F7;
+    --sigpet-surface: #FFFFFF;
+    --sigpet-border: #DCE5E7;
+    --sigpet-muted: #687981;
+    --sigpet-text: #263943;
+    --sigpet-shadow: 0 8px 24px rgba(28, 52, 63, 0.055);
+}
+
+/* Fondo, tipografía y superficies generales */
+body,
+.dashboard-body {
+    color: var(--sigpet-text);
+    background-color: var(--sigpet-background);
+    background-image: radial-gradient(#E2E9EA 0.8px, transparent 0.8px);
+    background-size: 24px 24px;
+}
+
+.dashboard-main {
+    color: var(--sigpet-text);
+}
+
+.dashboard-header {
+    border-bottom-color: var(--sigpet-border);
+}
+
+.dashboard-header h1,
+.bento-panel-head h2,
+.inventory-toolbar h3,
+.users-toolbar h3,
+.loan-summary strong,
+.loan-detail-card strong,
+.kpi-card strong {
+    color: var(--sigpet-ink);
+}
+
+.header-subtitle,
+.bento-panel-link,
+.bienvenida {
+    color: var(--sigpet-accent);
+}
+
+.header-desc,
+.inventory-toolbar p,
+.users-toolbar p,
+.table-subtext,
+.kpi-card span {
+    color: var(--sigpet-muted);
+}
+
+/* Menú lateral */
+.sidebar {
+    background: var(--sigpet-ink-deep);
+    border-right-color: #29434E;
+}
+
+.sidebar-top,
+.sidebar-bottom {
+    border-color: #2A424C;
+}
+
+.sidebar-toggle {
+    color: var(--sigpet-ink);
+    border-color: #C7D5D8;
+}
+
+.sidebar-toggle:hover {
+    background: var(--sigpet-accent);
+    border-color: var(--sigpet-accent);
+}
+
+.sidebar-logo {
+    background: linear-gradient(135deg, #368C86, #236D69);
+    box-shadow: 0 3px 10px rgba(40, 122, 118, 0.24);
+}
+
+.sidebar-label {
+    color: #9BAEB3;
+}
+
+.sidebar-link {
+    color: #D4DFE1;
+}
+
+.sidebar-link:hover {
+    background: #25424B;
+}
+
+.sidebar-link.active {
+    background: var(--sigpet-accent);
+    box-shadow: 0 4px 12px rgba(40, 122, 118, 0.24);
+}
+
+.sidebar-user {
+    background: #203B46;
+    border-color: #34535D;
+}
+
+.user-avatar {
+    background: linear-gradient(135deg, #3A8985, #246E6B);
+}
+
+.sidebar-logout:hover {
+    background: rgba(40, 122, 118, 0.18);
+    color: #FFFFFF;
+}
+
+/* Panel principal y tarjetas */
+.bento-meta-bar,
+.bento-panel,
+.inventory-container,
+.users-container,
+.kpi-card,
+.loan-form,
+.loan-detail-card,
+.loan-summary {
+    border-color: var(--sigpet-border);
+    box-shadow: var(--sigpet-shadow);
+}
+
+.bento-panel,
+.inventory-container,
+.users-container,
+.loan-form,
+.kpi-card {
+    background: var(--sigpet-surface);
+}
+
+.bento-date-pill {
+    color: var(--sigpet-text);
+}
+
+.bento-pill-btn {
+    border-color: #CFDADD;
+    background: #F8FAFA;
+    color: var(--sigpet-ink);
+}
+
+.bento-pill-btn:hover {
+    background: var(--sigpet-ink);
+    border-color: var(--sigpet-ink);
+}
+
+.bento-pill-btn.primary,
+.filter-button,
+.users-search button,
+.primary-link,
+.boton-login {
+    background: var(--sigpet-accent);
+    border-color: var(--sigpet-accent);
+}
+
+.bento-pill-btn.primary:hover,
+.filter-button:hover,
+.users-search button:hover,
+.primary-link:hover,
+.boton-login:hover {
+    background: var(--sigpet-accent-hover);
+    border-color: var(--sigpet-accent-hover);
+}
+
+.bento-panel-link:hover {
+    color: var(--sigpet-accent-hover);
+}
+
+.bento-module-tile {
+    background: #F8FAFA;
+    border-color: var(--sigpet-border);
+    color: var(--sigpet-ink);
+}
+
+.bento-module-tile:hover {
+    background: var(--sigpet-ink);
+    border-color: var(--sigpet-ink);
+}
+
+.bento-tile-icon {
+    background: var(--sigpet-accent-soft);
+    color: var(--sigpet-accent);
+}
+
+.bento-module-tile:hover .bento-tile-icon {
+    background: var(--sigpet-accent);
+    color: #FFFFFF;
+}
+
+/* Formularios y controles */
+.filter-field input,
+.filter-field select,
+.loan-filter select,
+.loan-filter input[type="date"],
+.loan-filter input[type="text"],
+.users-search input,
+.campo input,
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+    border-color: #CBD7DA;
+    color: var(--sigpet-ink);
+}
+
+.filter-field input:focus,
+.filter-field select:focus,
+.loan-filter select:focus,
+.loan-filter input[type="date"]:focus,
+.loan-filter input[type="text"]:focus,
+.users-search input:focus,
+.campo input:focus,
+input:not([type="checkbox"]):not([type="radio"]):focus,
+select:focus,
+textarea:focus {
+    outline: none;
+    border-color: var(--sigpet-accent);
+    box-shadow: 0 0 0 3px rgba(40, 122, 118, 0.13);
+}
+
+.available-check input {
+    accent-color: var(--sigpet-accent);
+}
+
+.filter-clear,
+.clear-search {
+    background: #EAF0F1;
+    color: var(--sigpet-ink);
+}
+
+.filter-clear:hover,
+.clear-search:hover {
+    background: #DCE7E8;
+}
+
+/* Tablas */
+.table-responsive {
+    border-color: var(--sigpet-border);
+}
+
+.inventory-table th,
+.users-table thead,
+.users-table th {
+    background: #F3F7F7;
+    color: #53666F;
+    border-bottom-color: var(--sigpet-border);
+}
+
+.inventory-table td,
+.users-table td {
+    color: #43545C;
+    border-bottom-color: #EAF0F1;
+}
+
+.inventory-table tbody tr:hover,
+.users-table tbody tr:hover {
+    background: #F6FAFA;
+}
+
+.inventory-table td strong,
+.users-table td strong {
+    color: var(--sigpet-ink);
+}
+
+.sigpet-tabs {
+    border-bottom-color: var(--sigpet-border);
+}
+
+.sigpet-tab:hover {
+    color: var(--sigpet-ink);
+    background: #EDF3F3;
+}
+
+.sigpet-tab.active {
+    color: var(--sigpet-accent);
+    border-bottom-color: var(--sigpet-accent);
+}
+
+.sigpet-tab-count {
+    background: #EAF0F1;
+    color: #53666F;
+}
+
+.sigpet-tab.active .sigpet-tab-count {
+    background: var(--sigpet-accent-soft);
+    color: var(--sigpet-accent-hover);
+}
+
+/* Acciones comunes: mantener colores semánticos de éxito, advertencia y error */
+.edit-action {
+    color: #276D79;
+    background: #EAF3F5;
+    border-color: #C8DDE1;
+}
+
+.edit-action:hover {
+    color: #FFFFFF;
+    background: #276D79;
+    border-color: #276D79;
+}
+
+.role-badge {
+    color: #276D79;
+    background: #EAF3F5;
+    border-color: #C8DDE1;
+}
+
+/* Inicio de sesión */
+body:not(.dashboard-body) {
+    background-color: var(--sigpet-background);
+    background-image: radial-gradient(#E2E9EA 0.8px, transparent 0.8px);
+    background-size: 24px 24px;
+}
+
+.contenedor-login {
+    border: 1px solid #E0E8E9;
+    border-radius: 18px;
+    box-shadow: 0 18px 48px rgba(24, 48, 59, 0.12);
+}
+
+.panel-informativo {
+    background: linear-gradient(150deg, #172D39 0%, #244A53 62%, #287A76 100%);
+}
+
+.marca-icono {
+    background: #368985;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.etiqueta {
+    color: #A9D5D1;
+}
+
+.informacion p {
+    color: #D9E7E7;
+}
+
+.pie-panel {
+    color: #B9CDCF;
+}
+
+.encabezado h2 {
+    color: var(--sigpet-ink);
+}
+
+.encabezado p,
+.nota-seguridad,
+.pie-formulario {
+    color: var(--sigpet-muted);
+}
+
+.campo label {
+    color: #354A54;
+}
+
+.campo input {
+    border-color: #CBD7DA;
+    border-radius: 9px;
+}
+
+.campo input:focus {
+    border-color: var(--sigpet-accent);
+    box-shadow: 0 0 0 3px rgba(40, 122, 118, 0.13);
+}
+
+.boton-login {
+    border-radius: 9px;
+    box-shadow: 0 4px 12px rgba(40, 122, 118, 0.16);
+}
+
+.boton-login:hover {
+    background: var(--sigpet-accent-hover);
+}
+
+/* Mensajes, avisos y componentes dinámicos */
+.sigpet-notice-strip {
+    background: linear-gradient(110deg, #1B3541, #28545A);
+    border: 1px solid #315F64;
+}
+
+.sigpet-toast {
+    box-shadow: 0 12px 32px rgba(24, 48, 59, 0.16);
+    border-color: var(--sigpet-border);
+}
+
+.sigpet-detail-modal {
+    border-color: var(--sigpet-border);
+    box-shadow: 0 20px 55px rgba(24, 48, 59, 0.20);
+}
+
+.sigpet-pagination {
+    border-top-color: #EAF0F1;
+    color: var(--sigpet-muted);
+}
+
+.sigpet-page-link.active {
+    background: var(--sigpet-accent);
+    border-color: var(--sigpet-accent);
+    color: #FFFFFF;
+}
+
+/* Mantener indicadores y estados operativos con su significado original. */
+
+/* Acciones secundarias y controles de navegación */
+.form-button.submit-button,
+.sigpet-btn-navy,
+.add-user-button,
+.sigpet-detail-btn-primary {
+    background: var(--sigpet-accent);
+    border-color: var(--sigpet-accent);
+    color: #FFFFFF;
+}
+
+.form-button.submit-button:hover:not(:disabled),
+.sigpet-btn-navy:hover,
+.add-user-button:hover,
+.sigpet-detail-btn-primary:hover {
+    background: var(--sigpet-accent-hover);
+    border-color: var(--sigpet-accent-hover);
+}
+
+.cancel-button {
+    background: #EAF0F1;
+    color: var(--sigpet-ink);
+}
+
+.cancel-button:hover {
+    background: #DCE7E8;
+}
+
+.sigpet-detail-btn {
+    border-color: #CBD7DA;
+    color: var(--sigpet-ink);
+}
+
+.sigpet-detail-btn:hover {
+    background: var(--sigpet-accent-soft);
+    border-color: var(--sigpet-accent);
+    color: var(--sigpet-accent-hover);
+}
+
+.sigpet-detail-eyebrow {
+    color: var(--sigpet-accent);
+}
+
+.sigpet-detail-title {
+    color: var(--sigpet-ink);
+}
+
+.sigpet-detail-header,
+.sigpet-detail-footer {
+    background: #F5F8F8;
+    border-color: var(--sigpet-border);
+}
+
+.sigpet-page-link.active {
+    background: var(--sigpet-ink);
+    border-color: var(--sigpet-ink);
+}
+
+.sigpet-page-link:hover {
+    border-color: var(--sigpet-accent);
+    color: var(--sigpet-accent-hover);
+}
+
+.preset-chip {
+    color: var(--sigpet-accent-hover);
+}
+
+.preset-chip:hover {
+    background: var(--sigpet-accent-soft);
+    border-color: #A8C9C7;
+}
+
+.checkbox-inline input {
+    accent-color: var(--sigpet-accent);
+}
+
+/* Mantener legibles los avisos y estados, sin alterar su semántica. */
+.sigpet-toast {
+    color: var(--sigpet-ink);
+}
+
+.sigpet-toast-title {
+    color: var(--sigpet-ink);
+}
+
+.sigpet-toast-info .sigpet-toast-icon {
+    background: var(--sigpet-accent);
+    box-shadow: 0 4px 12px rgba(40, 122, 118, 0.22);
+}
