@@ -239,6 +239,7 @@ function urlHistorialPagina(int $pag): string
         href="../CSS/prestamos.css"
     >
 
+    <link rel="stylesheet" href="../CSS/theme-profesional.css">
 </head>
 
 

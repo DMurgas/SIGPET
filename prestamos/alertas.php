@@ -171,6 +171,7 @@ $tokenCSRF = obtenerTokenCSRF();
     <link rel="stylesheet" href="../CSS/dashboard.css">
     <link rel="stylesheet" href="../CSS/inventario.css">
     <link rel="stylesheet" href="../CSS/prestamos.css">
+    <link rel="stylesheet" href="../CSS/theme-profesional.css">
 </head>
 <body class="dashboard-body">
 <div class="dashboard-layout">

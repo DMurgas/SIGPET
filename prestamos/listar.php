@@ -213,6 +213,7 @@ switch ($_GET['error'] ?? '') {
         href="../CSS/prestamos.css"
     >
 
+    <link rel="stylesheet" href="../CSS/theme-profesional.css">
 </head>
 
 <body class="dashboard-body">

@@ -83,6 +83,7 @@ $tokenCSRF = obtenerTokenCSRF();
     <title>Rechazar solicitud | SIGPET</title>
     <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
     <link rel="stylesheet" href="../CSS/base.css"><link rel="stylesheet" href="../CSS/dashboard.css"><link rel="stylesheet" href="../CSS/usuarios.css"><link rel="stylesheet" href="../CSS/prestamos.css">
+    <link rel="stylesheet" href="../CSS/theme-profesional.css">
 </head>
 <body class="dashboard-body">
 <div class="dashboard-layout">
