@@ -76,7 +76,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $tokenCSRF = obtenerTokenCSRF();
 ?>
 <!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Registrar equipo | SIGPET</title>
-    <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg"><link rel="stylesheet" href="../CSS/base.css"><link rel="stylesheet" href="../CSS/dashboard.css"><link rel="stylesheet" href="../CSS/usuarios.css"><link rel="stylesheet" href="../CSS/inventario.css"></head>
+    <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg"><link rel="stylesheet" href="../CSS/base.css"><link rel="stylesheet" href="../CSS/dashboard.css"><link rel="stylesheet" href="../CSS/usuarios.css"><link rel="stylesheet" href="../CSS/inventario.css">    <link rel="stylesheet" href="../CSS/theme-profesional.css">
+</head>
 <body class="dashboard-body"><div class="dashboard-layout">
 <?php $rutaBase = '../'; $paginaActiva = 'inventario'; require __DIR__ . '/../includes/sidebar.php'; ?>
 <main class="dashboard-main"><header class="dashboard-header"><div><span class="header-subtitle">CONTROL DE EQUIPOS TECNOLÓGICOS</span><h1>Registrar equipo</h1><p class="header-desc">Incorpora un nuevo equipo tecnológico al inventario institucional.</p></div></header>

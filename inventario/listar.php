@@ -246,6 +246,7 @@ if (isset($_GET['registrado'])) {
         href="../CSS/prestamos.css"
     >
 
+    <link rel="stylesheet" href="../CSS/theme-profesional.css">
 </head>
 
 <body class="dashboard-body">
