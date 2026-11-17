@@ -35,7 +35,8 @@ function urlUsuariosPagina(int $pag): string {
 }
 ?>
 <!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Gestión de usuarios | SIGPET</title>
-    <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg"><link rel="stylesheet" href="../CSS/base.css"><link rel="stylesheet" href="../CSS/dashboard.css"><link rel="stylesheet" href="../CSS/usuarios.css"><link rel="stylesheet" href="../CSS/inventario.css"></head>
+    <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg"><link rel="stylesheet" href="../CSS/base.css"><link rel="stylesheet" href="../CSS/dashboard.css"><link rel="stylesheet" href="../CSS/usuarios.css"><link rel="stylesheet" href="../CSS/inventario.css">    <link rel="stylesheet" href="../CSS/theme-profesional.css">
+</head>
 <body class="dashboard-body"><div class="dashboard-layout">
 <?php $rutaBase = '../'; $paginaActiva = 'usuarios'; require __DIR__ . '/../includes/sidebar.php'; ?>
 <main class="dashboard-main"><header class="dashboard-header"><div><span class="header-subtitle">ADMINISTRACIÓN DEL SISTEMA</span><h1>Gestión de usuarios</h1><p class="header-desc">Administra las cuentas registradas en SIGPET (<?= $totalUsuarios ?> encontrado<?= $totalUsuarios === 1 ? '' : 's' ?>).</p></div><?php if (tienePermiso('usuarios.registrar')): ?><div class="header-actions"><a href="registrar.php" class="add-user-button">+ Nuevo usuario</a></div><?php endif; ?></header>
